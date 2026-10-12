@@ -23,10 +23,10 @@
   function keyFor(topic,message,context,direct){
    if(direct)return direct;
    const q=String(message||'').toLowerCase();
-   if(/学校|作业|上课|考试|school|homework|학교|수업|숙제|시험/.test(q))return 'rage';
+   if(topic==='school'||/学校|作业|上课|考试|school|homework|학교|수업|숙제|시험|과제/.test(q))return 'rage';
    if(['performance','party','face_move'].includes(topic))return 'tiptoe';
-   if(['support','compliment','thanks','happy','fireworks','fire','greeting','face_many'].includes(topic))return 'clap';
-   if(['tired','sad','unclear','shopping','food'].includes(topic))return 'crine';
+   if(['support','compliment','thanks','happy','hype','agreement','fireworks','fire','greeting','face_many'].includes(topic))return 'clap';
+   if(['tired','sad','roast','laughing','unclear','shopping','food'].includes(topic))return 'crine';
    if(['bunny','pig','uncle','face_close','face_enter','face_away','filters','choice','joke'].includes(topic)||context.filter)return 'son';
    const ids=['son','crine','clap','tiptoe'].filter(id=>id!==lastMediaId);return ids[Math.floor(random()*ids.length)];
   }

@@ -9,16 +9,19 @@ function numberLabel(n){return n>=10000?(n/10000).toFixed(1)+'万':n.toLocaleStr
 function updateCounts(){ $('likesDisplay').textContent=numberLabel(likes);$('viewerDisplay').textContent=numberLabel(viewers); }
 function toast(message){$('globalToast').textContent=message;$('globalToast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('globalToast').classList.remove('visible'),3000);}
 function stageToast(message){$('stageToast').textContent=message;$('stageToast').classList.add('visible');clearTimeout(stageToastTimer);stageToastTimer=setTimeout(()=>$('stageToast').classList.remove('visible'),2200);}
-function addComment(text=pick(custom.length?custom:samples),name=pick(names),self=false,attachment=null){
+function addComment(text=pick(custom.length?custom:samples),name=pick(names),self=false,attachment=null,replyTo=null){
  const row=document.createElement('div');row.className='chat-row'+(self?' self':'');
  const level=document.createElement('span');level.className='level';level.textContent='♬ '+(3+Math.floor(Math.random()*29));
  const username=document.createElement('span');username.className='name';username.textContent=name+'：';
  const content=document.createElement('span');content.textContent=text;row.append(level,username,content);
+ if(replyTo?.text){row.classList.add('is-reply');const reference=document.createElement('small');reference.className='reply-reference';reference.textContent='回复 '+(replyTo.name||'我')+' · '+String(replyTo.text).slice(0,42);row.append(reference);}
  const meme=window.LiveMemePack?.get(attachment);if(meme){row.classList.add('has-attachment');const button=document.createElement('button');button.className='chat-media';button.type='button';button.setAttribute('aria-label','查看表情：'+meme.title);const img=document.createElement('img');img.src=meme.src;img.alt=meme.title;img.decoding='async';img.width=meme.width;img.height=meme.height;const badge=document.createElement('span');badge.className='media-badge';badge.textContent=meme.kind==='gif'?'GIF':'IMG';const caption=document.createElement('span');caption.className='media-caption';caption.textContent=meme.title;button.append(img,badge,caption);button.addEventListener('click',()=>showMemePreview(meme.id));img.addEventListener('load',()=>$('chatArea').scrollTop=$('chatArea').scrollHeight);img.addEventListener('error',()=>{button.classList.add('media-failed');caption.textContent=meme.title+' · 图片暂时不可用';});row.append(button);}
  $('chatFeed').append(row);
  while($('chatFeed').children.length>7)$('chatFeed').firstElementChild.remove();
  $('chatArea').classList.toggle('has-chat-media',!!$('chatFeed').querySelector('.has-attachment'));$('chatArea').scrollTop=$('chatArea').scrollHeight;
+ return row;
 }
+function reactComment(row,emoji,name){if(!row?.isConnected)return;let reactions=row.querySelector('.comment-reactions');if(!reactions){reactions=document.createElement('span');reactions.className='comment-reactions';row.append(reactions);}reactions.textContent=emoji+' 1';reactions.title=name+' 对这条评论作出回应';reactions.setAttribute('aria-label',name+' 的反应：'+emoji);$('chatArea').scrollTop=$('chatArea').scrollHeight;}
 function showMemePreview(id){const meme=window.LiveMemePack?.get(id);if(!meme)return;$('sheetTitle').textContent=meme.title;$('sheetContent').replaceChildren();const img=document.createElement('img');img.className='meme-detail-image';img.src=meme.src;img.alt=meme.title;const credit=document.createElement('p');credit.className='meme-credit';credit.textContent=meme.credit;const source=document.createElement('a');source.className='meme-source';source.href=meme.source;source.target='_blank';source.rel='noopener noreferrer';source.textContent='查看原出处 ↗';$('sheetContent').append(img,credit,source);$('sheet').classList.add('meme-sheet');$('sheet').hidden=false;}
 function scheduleChat(){clearTimeout(chatTimer);if(!running||window.liveAudience?.enabled())return;chatTimer=setTimeout(()=>{addComment();scheduleChat();},speeds[+$('chatSpeed').value-1]*(.85+Math.random()*.3));}
 function heart(){const h=document.createElement('span');h.className='floating-heart';h.textContent='♥';h.style.color=pick(['#ff436d','#ff86ad','#ffb7cc','#ff6589','#d898ff']);h.style.left=Math.random()*45+'%';h.style.setProperty('--drift',(Math.random()*15-7)+'cqw');h.style.setProperty('--tilt',(Math.random()*45-22)+'deg');$('heartField').append(h);h.addEventListener('animationend',()=>h.remove());}
@@ -46,7 +49,7 @@ $('autoChat').addEventListener('change',e=>{running=e.target.checked;$('simulati
 $('chatSpeed').addEventListener('input',e=>{$('speedValue').textContent=['아주 느리게','여유롭게','자연스럽게','활기차게','아주 빠르게'][e.target.value-1];scheduleChat();});
 $('applyComments').addEventListener('click',()=>{custom=$('customComments').value.split('\n').map(s=>s.trim().slice(0,120)).filter(Boolean).slice(0,200);toast(custom.length?custom.length+'개 댓글 문구를 적용했습니다.':'중국어 샘플 댓글을 사용합니다.');});
 $('showSticker').addEventListener('change',e=>$('liveSticker').hidden=!e.target.checked);
-$('liveChatForm').addEventListener('submit',e=>{e.preventDefault();const value=$('liveChatInput').value.trim();if(value){addComment(value,'我',true);$('liveChatInput').value='';window.liveAudience?.ask(value);}});
+$('liveChatForm').addEventListener('submit',e=>{e.preventDefault();const value=$('liveChatInput').value.trim();if(value){const row=addComment(value,'我',true);$('liveChatInput').value='';window.liveAudience?.ask(value,row);}});
 $('follow').addEventListener('click',()=>{const followed=$('follow').textContent==='已关注';$('follow').textContent=followed?'关注':'已关注';$('follow').style.background=followed?'':'#ffffff33';stageToast(followed?'已取消关注':'关注成功 ❤️');});
 ['burstButton','likeButton'].forEach(id=>$(id).addEventListener('click',burst));$('roseButton').addEventListener('click',rose);
 function closeSheet(){ $('sheet').hidden=true;$('sheet').classList.remove('meme-sheet'); }

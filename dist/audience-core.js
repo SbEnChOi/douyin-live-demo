@@ -22,6 +22,13 @@
   tired:['今天生活是不是给你开困难模式了😂 先躺一下，别跟它硬刚','哥们你的电量也见底了？先把自己接上奶茶充电器','累了就休息，连手机都敢当着老板的面关机'],
   sad:['这破心情先扔旁边，哥们来这儿一起笑个两分钟😂','今天不开心是吧，先让主播把脸整离谱一点，我们再聊','行，今天的烦心事先排队，这会儿笑点插个队'],
   happy:['哦豁，今天这么高兴，哥们请客不😂','好事来了？先说好，精神上替你收个红包','这快乐得分我一半，弹幕不能白陪你嗨'],
+  laughing:['你这一串哈哈，我隔着屏幕都听见了😂','哥们别笑太狠，腹肌的加班费没人报销','绷不住就一起绷，弹幕已经集体离线了😭'],
+  roast:['行，嫌我无聊是吧，我这笑点先去办个退款😂','不好笑？哥们你先别划走，我把脑子重启一下','收到差评，笑话售后已经在来的路上了😂'],
+  agreement:['懂了，评论区又找到一个同款脑回路🤝','确实，哥们这票算你投的，笑点股东加一','同意是吧，那这锅我们俩一起背😂'],
+  hype:['你这句夸得，主播的自信直接满格了🔥','绝了是吧，先把这句截屏，低谷的时候反复看','哥们收着点夸，主播快把自己当年会压轴了😂'],
+  attention:['看到了看到了，你这条弹幕有自己的聚光灯👀','读到你了，哥们别急，键盘正在排队营业','在看你的评论呢，脑子还在路上，眼睛先到了😂'],
+  school:['一提作业，脑子立刻开启飞行模式😂','学校这两个字出来，Cartman 已经准备摇桌子了','先写两行作业再看一眼直播，哥们这叫分期付款😂'],
+  statement:['你这句我收到了，评论区的节目效果又加一😂','懂了懂了，哥们你这生活也挺会整活的','行，你继续说，我把笑点搬过来坐下了👀'],
   unclear:['哥们这个问题一出来，我的脑子直接转圈圈😂','问得好，建议先问一个有脑子的网友','你等一下，我的智商正在从外卖里找回来']
  };
  const korean={
@@ -43,13 +50,20 @@
   tired:['형ㅋㅋ 배터리 1퍼면 인간도 충전 좀 해야지','오늘 인생 난이도 왜 이럼ㅋㅋ 일단 누워서 패치 기다려'],
   sad:['아니 형ㅋㅋ 고민 잠깐 대기시켜 드립 먼저 입장한다','오늘 기분 구리면 형 얼굴에 토끼 필터부터 씌워보자ㅋㅋ'],
   happy:['형ㅋㅋ 좋은 일 있었냐 정신적 축의금만 보낼게']
+  ,laughing:['형ㅋㅋ 웃다가 내 뇌도 같이 로그아웃함','ㅋㅋㅋ 형 웃음소리 댓글로 들리는 거 실화냐']
+  ,roast:['노잼 접수ㅋㅋ 형 내 뇌 재부팅하고 다시 온다','형ㅋㅋ 드립 AS센터 지금 출발했으니까 잠깐만']
+  ,agreement:['ㄹㅇㅋㅋ 형이랑 나랑 뇌 회선 같은 거 쓰냐','인정 접수ㅋㅋ 이제 이 드립 공동 책임이다 형']
+  ,hype:['형ㅋㅋ 그렇게 칭찬하면 본체 자존감 폭죽 터짐','ㄹㅇ 그 말 캡처해서 자신감 떨어질 때 다시 본다ㅋㅋ']
+  ,attention:['형 댓글 봤다ㅋㅋ 뇌는 늦어도 눈은 출근함','읽었다 형ㅋㅋ 댓글에 혼자 조명 켰네']
+  ,school:['형ㅋㅋ 과제 얘기하니까 내 뇌가 비행기 모드 켰다','학교는 출석했는데 뇌는 결석했네 형ㅋㅋ']
+  ,statement:['형ㅋㅋ 댓글 읽었는데 일상도 방송만큼 웃기네','오케이 형ㅋㅋ 계속 말해봐 웃음 대기 중']
  };
  function create(options={}){
   const random=options.random||Math.random;let memory={name:'',lastTopic:'',lastMessage:'',lastChoice:''},recent=[],turn=0,lastSpeaker=-1;
   function choose(list){const choices=list.filter(t=>!recent.includes(t)),fallback=list.filter(t=>t!==recent.at(-1)),source=choices.length?choices:fallback.length?fallback:list;const text=source[Math.floor(random()*source.length)];recent.push(text);if(recent.length>24)recent.shift();return text;}
   function person(avoid=''){let i=Math.floor(random()*people.length);if(i===lastSpeaker)i=(i+1)%people.length;if(people[i]===avoid)i=(i+1)%people.length;lastSpeaker=i;return people[i];}
   function mix(topic,text,context){return random()<(context.koreanRatio??.12)&&korean[topic]?choose(korean[topic]):text;}
-  function result(topic,text,context,extra=[]){memory.lastTopic=topic;return {topic,comments:[{name:'阿晨',text:mix(topic,text,context)},...extra.map(text=>({name:person('阿晨'),text}))]};}
+  function result(topic,text,context,extra=[]){memory.lastTopic=topic;const reaction=['thanks','support'].includes(topic)?'❤️':['happy','hype','compliment','agreement'].includes(topic)?'👏':['fire','performance'].includes(topic)?'🔥':['tired','sad','school','roast'].includes(topic)?'😭':topic==='attention'?'👀':'😂';return {topic,reaction,comments:[{name:'阿晨',text:mix(topic,text,context)},...extra.map(text=>({name:person('阿晨'),text}))]};}
   function reply(message,context={}){
    const text=String(message).trim().slice(0,180),q=text.toLowerCase(),previous=memory.lastTopic;memory.lastMessage=text;turn++;
    const named=text.match(/(?:내\s*이름은|我叫|我的名字是|my name is)\s*([\p{L}\p{N}_·]{1,20})/u);
@@ -65,6 +79,12 @@
     return result(context.filter||'filters',context.filter?choose(pools[context.filter]):'还没开滤镜啊，哥们先开个兔子，让门牙替你上班🐰',context);
    }
    if(/(?:为什么|为啥|왜|why)/.test(q)&&filterNames[previous])return result(previous,`因为${previous==='bunny'?'眼睛和门牙已经比主播还像主播':previous==='pig'?'鼻孔都能申请独立户口了':'胡子都够干一份保洁工作了'}啊，哥们这还不够离谱吗😂`,context);
+   if(/(?:노잼|재미\s*없|안\s*웃겨|바보|멍청|不好笑|无聊|笨蛋|boring)/.test(q))return result('roast',choose(pools.roast),context);
+   if(/(?:내\s*댓글|댓글.*읽|나\s*좀\s*봐|看我|理我|读.*评论|read.*comment)/.test(q))return result('attention',choose(pools.attention),context);
+   if(/(?:学校|作业|上课|考试|school|homework|학교|수업|숙제|시험|과제)/.test(q)&&!/[?？]|왜|어떻게|뭐|什么|怎么/.test(q))return result('school',choose(pools.school),context);
+   if(/(?:레전드|폼\s*미쳤|지렸다|잘했|厉害|牛逼|绝了|legend|goated)/.test(q))return result('hype',choose(pools.hype),context);
+   if(/^(?:맞아|인정|ㄹㅇ|동의|同意|确实|agree|real)[!！.。\sㅋ哈]*$/.test(q))return result('agreement',choose(pools.agreement),context);
+   if(/(?:ㅋ{2,}|ㅎ{2,}|哈哈|笑死|绷不住|lmao|lol\b)/.test(q)&&!/왜|什么|怎么|농담/.test(q))return result('laughing',choose(pools.laughing),context);
    if(/(?:烟花|폭죽|불꽃|firework|火焰|불.*효과|派对|파티)/.test(q)){const kind=context.reaction||(/火焰|불.*효과/.test(q)?'fire':/派对|파티/.test(q)?'party':'fireworks');return result(kind,choose(pools[kind]),context);}
    if(/(?:笑话|농담|웃겨|joke|搞笑|드립)/.test(q))return result('joke',choose(pools.joke),context,['笑死，脑子不多但是梗挺密']);
    if(/(?:累|피곤|疲惫|힘들|졸려|困了|疲劳|tired)/.test(q))return result('tired',choose(pools.tired),context);
@@ -87,6 +107,7 @@
     return result(previous,previous==='name'&&memory.name?`${memory.name}我记住了，别再考，哥们内存要报警了😂`:'真的，哥们脑子会掉线，但是整活从不迟到😂',context);
    }
    const snippet=text.replace(/[“”"<>]/g,'').slice(0,24);
+   if(!/[?？]|왜|뭐|어떻게|얼마|언제|누가|어디|什么|怎么|为何|多少|\b(?:what|why|how|when|who|where)\b/.test(q))return result('statement',`“${snippet}”——${choose(pools.statement)}`,context);
    return result('unclear',choose([`“${snippet}”这题你问得好，哥们的脑子刚好申请年假了😂`,`“${snippet}”？等一下，我先把智商从外卖里找回来`,`你刚问“${snippet}”，我的CPU听完直接开始冒烟哈哈`]),context,['不是哥们，认真聊天也能被你整出节目效果']);
   }
   function automatic(context={},event=null){let topic=event?.topic;if(!topic){if(context.filter&&random()<.65)topic=context.filter;else if(['food','tired','sad','happy','joke'].includes(memory.lastTopic)&&random()<.3){if(memory.lastTopic==='food')return {name:person(),text:'刚聊完吃的，哥们的减肥计划已经连夜注销了🧋',topic:'food'};topic=memory.lastTopic;}else topic='general';}return {name:person(),text:mix(topic,choose(pools[topic]||pools.general),context),topic};}

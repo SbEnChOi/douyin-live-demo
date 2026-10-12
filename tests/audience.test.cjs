@@ -32,21 +32,21 @@ test('comments follow actual scene events and do not invent a face or clothing c
  assert.match(bot.reply('시청자 몇 명이야?',plain).comments[0].text,/12,800/);
 });
 test('unknown questions get a contextual joke and ordinary tired messages stay in joke mode',()=>{
- const bot=create({random:()=>.5});assert.match(bot.reply('양자역학 수업 시작하자',plain).comments[0].text,/양자역학/);
+ const bot=create({random:()=>.5});assert.match(bot.reply('양자역학 수업 시작할까?',plain).comments[0].text,/양자역학/);
  assert.equal(bot.reply('오늘 너무 피곤해',plain).topic,'tired');
  assert.match(bot.reply('농담해줘',plain).comments[0].text,/钱包|人生|朋友|腹肌|明天/);
 });
 
 function browserLogic(withMemes=false){
- let now=0,id=0;const timers=new Map(),comments=[],elements=new Map(),handlers=new Map();
- const defaults={smartComments:{checked:true},autoChat:{checked:true},audienceInterval:{value:'6'},koreanMix:{value:'0'},viewers:{value:'12800'},stage:{dataset:{}},media:{currentTime:0,paused:true},audienceTyping:{hidden:true},sendMemes:{checked:true},memeFrequency:{value:'35'},swearLevel:{value:'0'}};
+ let now=0,id=0;const timers=new Map(),comments=[],reactions=[],elements=new Map(),handlers=new Map();
+ const defaults={smartComments:{checked:true},replyToMe:{checked:true},autoChat:{checked:true},audienceInterval:{value:'6'},koreanMix:{value:'0'},viewers:{value:'12800'},stage:{dataset:{}},media:{currentTime:0,paused:true},audienceTyping:{hidden:true},sendMemes:{checked:true},memeFrequency:{value:'35'},swearLevel:{value:'0'}};
  const get=key=>{if(!elements.has(key))elements.set(key,{textContent:'',hidden:false,dataset:{},value:'',checked:false,classList:{add(){},remove(){}},listeners:{},addEventListener(type,callback){(this.listeners[type]??=[]).push(callback);},...defaults[key]});return elements.get(key);};
  class FakeDate extends Date {static now(){return now;}}
  const math=Object.create(Math);math.random=()=>0;
- const sandbox={Math:math,Date:FakeDate,Intl,console,document:{hidden:false,getElementById:get,addEventListener(){}},setTimeout(callback,delay){timers.set(++id,{callback,due:now+delay});return id;},clearTimeout(key){timers.delete(key);},addComment(text,name,self,attachment){comments.push({text,name,attachment,at:now});},toast(){},pick:array=>array[0],custom:[],mediaKind:'none',mediaGeneration:1,chatTimer:0,scheduleChat(){},$ :get,liveEffects:{watchFaces(){}},addEventListener(type,callback){(handlers.get(type)||handlers.set(type,[]).get(type)).push(callback);}};
+ const sandbox={Math:math,Date:FakeDate,Intl,console,document:{hidden:false,getElementById:get,addEventListener(){}},setTimeout(callback,delay){timers.set(++id,{callback,due:now+delay});return id;},clearTimeout(key){timers.delete(key);},addComment(text,name,self,attachment,replyTo){comments.push({text,name,attachment,replyTo,at:now});},reactComment(row,emoji,name){reactions.push({row,emoji,name,at:now});},toast(){},pick:array=>array[0],custom:[],mediaKind:'none',mediaGeneration:1,chatTimer:0,scheduleChat(){},$ :get,liveEffects:{watchFaces(){}},addEventListener(type,callback){(handlers.get(type)||handlers.set(type,[]).get(type)).push(callback);}};
  sandbox.window=sandbox;const context=vm.createContext(sandbox);
  for(const filename of [...(withMemes?['meme-pack.js']:[]),'audience-core.js','audience.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../dist',filename),'utf8'),context,{filename});
- return {context,get,comments,emit(type,detail){for(const callback of handlers.get(type)||[])callback({detail});},change(key){for(const callback of get(key).listeners.change||[])callback({target:get(key)});},advance(ms){const target=now+ms;let steps=0;while(true){let next=null;for(const [key,value]of timers)if(value.due<=target&&(!next||value.due<next[1].due))next=[key,value];if(!next)break;if(++steps>1000)throw Error('Runaway timer');timers.delete(next[0]);now=next[1].due;next[1].callback();}now=target;}};
+ return {context,get,comments,reactions,emit(type,detail){for(const callback of handlers.get(type)||[])callback({detail});},change(key){for(const callback of get(key).listeners.change||[])callback({target:get(key)});},advance(ms){const target=now+ms;let steps=0;while(true){let next=null;for(const [key,value]of timers)if(value.due<=target&&(!next||value.due<next[1].due))next=[key,value];if(!next)break;if(++steps>1000)throw Error('Runaway timer');timers.delete(next[0]);now=next[1].due;next[1].callback();}now=target;}};
 }
 test('question replies are delayed, preserve FIFO order, and work with automatic comments paused',()=>{
  const app=browserLogic();app.get('autoChat').checked=false;app.change('autoChat');
@@ -72,4 +72,28 @@ test('meme requests retain delayed replies and obey settings changed while the r
  app.advance(1100);
  app.context.liveAudience.ask('고양이 박수 GIF 보내줘');app.get('sendMemes').checked=false;
  app.advance(2200);assert.equal(app.comments.at(-1).attachment,null);
+});
+
+test('short everyday comments get fitting reactions without being treated as factual questions',()=>{
+ const bot=create({random:()=>.5});
+ for(const [message,topic,emoji] of [['ㅋㅋㅋㅋ','laughing','😂'],['노잼','roast','😭'],['인정ㅋㅋ','agreement','👏'],['내 댓글 읽어줘','attention','👀'],['폼 미쳤다','hype','👏'],['과제 하기 싫다','school','😭']]){
+  const answer=bot.reply(message,plain);assert.equal(answer.topic,topic);assert.equal(answer.reaction,emoji);assert.doesNotMatch(answer.comments[0].text,/这个问题|这题|你刚问/);
+ }
+ const ordinary=bot.reply('오늘 운동하고 왔다',plain);assert.equal(ordinary.topic,'statement');assert.match(ordinary.comments[0].text,/오늘 운동하고 왔다/);
+});
+
+test('quick emoji reactions and delayed replies stay tied to the correct original comments',()=>{
+ const app=browserLogic(true),first={id:1},second={id:2};app.get('autoChat').checked=false;app.change('autoChat');
+ app.context.liveAudience.ask('ㅋㅋㅋㅋ',first);app.context.liveAudience.ask('노잼',second);
+ app.advance(699);assert.equal(app.reactions.length,0);assert.equal(app.comments.length,0);
+ app.advance(1);assert.equal(app.reactions[0].row,first);assert.equal(app.reactions[0].emoji,'😂');assert.equal(app.reactions[1].row,second);assert.equal(app.reactions[1].emoji,'😭');
+ app.advance(1500);assert.equal(app.comments[0].replyTo.text,'ㅋㅋㅋㅋ');assert.match(app.comments[0].text,/哈哈|腹肌|绷/);
+ app.advance(2200);assert.equal(app.comments[1].replyTo.text,'노잼');assert.match(app.comments[1].text,/无聊|不好笑|差评/);
+});
+
+test('disabling replies cancels emojis and queued answers while automatic comments continue',()=>{
+ const app=browserLogic();app.context.liveAudience.ask('내 댓글 읽어줘',{id:1});app.get('replyToMe').checked=false;app.change('replyToMe');
+ app.advance(10000);assert.equal(app.reactions.length,0);assert.ok(app.comments.length>0);assert.ok(app.comments.every(c=>!c.replyTo));assert.equal(app.get('audienceTyping').hidden,true);
+ app.get('autoChat').checked=false;app.change('autoChat');app.get('replyToMe').checked=true;app.change('replyToMe');
+ app.context.liveAudience.ask('인정ㅋㅋ',{id:2});app.get('restartPreview').listeners.click[0]();const before=app.comments.length;app.advance(4000);assert.equal(app.reactions.length,0);assert.equal(app.comments.length,before);
 });
