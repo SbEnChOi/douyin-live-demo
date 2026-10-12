@@ -49,7 +49,7 @@ $('follow').addEventListener('click',()=>{const followed=$('follow').textContent
 function closeSheet(){ $('sheet').hidden=true; }
 $('sheetClose').addEventListener('click',closeSheet);
 $('shoppingBag').addEventListener('click',()=>{$('sheetTitle').textContent='购物袋';$('sheetContent').innerHTML='<div class="sheet-emoji">🛍️</div><p>主播还没有添加商品</p><p>好物即将上线，敬请期待</p>';$('sheet').hidden=false;});
-$('giftButton').addEventListener('click',()=>{$('sheetTitle').textContent='送礼物';$('sheetContent').innerHTML='<button class="gift-choice" id="sendRose">🌹 送一朵玫瑰</button><p>给主播一点小小的鼓励</p>';$('sendRose').addEventListener('click',()=>{closeSheet();rose();});$('sheet').hidden=false;});
+$('giftButton').addEventListener('click',()=>{$('sheetTitle').textContent='送礼物';$('sheetContent').innerHTML='<div class="gift-options"><button class="gift-choice" id="sendRose">🌹 送一朵玫瑰</button><button class="gift-choice" data-gift-effect="fireworks">🎆 烟花盛典</button><button class="gift-choice" data-gift-effect="fire">🔥 火力全开</button><button class="gift-choice" data-gift-effect="party">🎉 派对时间</button></div><p>给主播一点小小的鼓励</p>';$('sendRose').addEventListener('click',()=>{closeSheet();rose();});$('sheetContent').querySelectorAll('[data-gift-effect]').forEach(button=>button.addEventListener('click',()=>{closeSheet();window.liveEffects?.reaction(button.dataset.giftEffect);}));$('sheet').hidden=false;});
 $('shareButton').addEventListener('click',()=>stageToast('邀请朋友一起看直播 ✨'));
 $('stageClose').addEventListener('click',()=>{if(document.body.classList.contains('capture'))exitCapture();else stageToast('欢迎来到直播间 ❤️');});
 function showControls(){document.body.classList.add('show-controls');clearTimeout(controlsTimer);controlsTimer=setTimeout(()=>document.body.classList.remove('show-controls'),2200);}

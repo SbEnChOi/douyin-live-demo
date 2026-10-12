@@ -1,0 +1,9 @@
+Google MediaPipe Tasks Vision 1.1.0
+Copyright Google LLC. Distributed under the Apache License, Version 2.0.
+Package: https://registry.npmjs.org/@mediapipe/tasks-vision/-/tasks-vision-1.1.0.tgz
+Source: https://github.com/google-ai-edge/mediapipe
+License: LICENSE-APACHE-2.0.txt in this directory.
+
+BlazeFace short-range face detection model
+Source: https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite
+Documentation: https://ai.google.dev/edge/mediapipe/solutions/vision/face_detector
