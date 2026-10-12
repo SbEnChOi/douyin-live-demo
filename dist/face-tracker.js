@@ -12,7 +12,7 @@ self.onmessage = async ({data}) => {
   try {
    const result=detector.detect(data.bitmap);
    const faces=result.detections.map(face=>({box:face.boundingBox,points:face.keypoints})).sort((a,b)=>b.box.width*b.box.height-a.box.width*a.box.height);
-   self.postMessage({type:'result',face:faces[0]||null,width:data.bitmap.width,height:data.bitmap.height,generation:data.generation});
+   self.postMessage({type:'result',face:faces[0]||null,boxes:faces.map(face=>face.box),width:data.bitmap.width,height:data.bitmap.height,generation:data.generation});
   } catch(error) {self.postMessage({type:'frame-error',generation:data.generation,message:String(error.message)});}
   finally {data.bitmap.close();}
  }

@@ -17,7 +17,7 @@ function addComment(text=pick(custom.length?custom:samples),name=pick(names),sel
  while($('chatFeed').children.length>7)$('chatFeed').firstElementChild.remove();
  $('chatArea').scrollTop=$('chatArea').scrollHeight;
 }
-function scheduleChat(){clearTimeout(chatTimer);if(!running)return;chatTimer=setTimeout(()=>{addComment();scheduleChat();},speeds[+$('chatSpeed').value-1]*(.85+Math.random()*.3));}
+function scheduleChat(){clearTimeout(chatTimer);if(!running||window.liveAudience?.enabled())return;chatTimer=setTimeout(()=>{addComment();scheduleChat();},speeds[+$('chatSpeed').value-1]*(.85+Math.random()*.3));}
 function heart(){const h=document.createElement('span');h.className='floating-heart';h.textContent='♥';h.style.color=pick(['#ff436d','#ff86ad','#ffb7cc','#ff6589','#d898ff']);h.style.left=Math.random()*45+'%';h.style.setProperty('--drift',(Math.random()*15-7)+'cqw');h.style.setProperty('--tilt',(Math.random()*45-22)+'deg');$('heartField').append(h);h.addEventListener('animationend',()=>h.remove());}
 function burst(){for(let i=0;i<9;i++)setTimeout(heart,i*100);likes+=9;$('likes').value=likes;updateCounts();}
 function rose(){clearTimeout(giftTimer);$('giftOverlay').hidden=false;giftTimer=setTimeout(()=>$('giftOverlay').hidden=true,3600);}
@@ -43,7 +43,7 @@ $('autoChat').addEventListener('change',e=>{running=e.target.checked;$('simulati
 $('chatSpeed').addEventListener('input',e=>{$('speedValue').textContent=['아주 느리게','여유롭게','자연스럽게','활기차게','아주 빠르게'][e.target.value-1];scheduleChat();});
 $('applyComments').addEventListener('click',()=>{custom=$('customComments').value.split('\n').map(s=>s.trim().slice(0,120)).filter(Boolean).slice(0,200);toast(custom.length?custom.length+'개 댓글 문구를 적용했습니다.':'중국어 샘플 댓글을 사용합니다.');});
 $('showSticker').addEventListener('change',e=>$('liveSticker').hidden=!e.target.checked);
-$('liveChatForm').addEventListener('submit',e=>{e.preventDefault();const value=$('liveChatInput').value.trim();if(value){addComment(value,'我',true);$('liveChatInput').value='';}});
+$('liveChatForm').addEventListener('submit',e=>{e.preventDefault();const value=$('liveChatInput').value.trim();if(value){addComment(value,'我',true);$('liveChatInput').value='';window.liveAudience?.ask(value);}});
 $('follow').addEventListener('click',()=>{const followed=$('follow').textContent==='已关注';$('follow').textContent=followed?'关注':'已关注';$('follow').style.background=followed?'':'#ffffff33';stageToast(followed?'已取消关注':'关注成功 ❤️');});
 ['burstButton','likeButton'].forEach(id=>$(id).addEventListener('click',burst));$('roseButton').addEventListener('click',rose);
 function closeSheet(){ $('sheet').hidden=true; }

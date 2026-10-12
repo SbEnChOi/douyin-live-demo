@@ -42,11 +42,11 @@
  function stopReaction(){cancelAnimationFrame(reactionFrame);reactionFrame=0;particles=[];queue=[];ctx.clearRect(0,0,width,height);get('reactionBanner').hidden=true;delete stage.dataset.reaction;}
  function triggerReaction(kind){
   if(!['fireworks','fire','party'].includes(kind))return;stopReaction();resize();reactionKind=kind;reactionStart=performance.now();lastReactionFrame=reactionStart;stage.dataset.reaction=kind;
-  const info={fireworks:['🎆','烟花盛典'],fire:['🔥','火力全开'],party:['🎉','派对时间']}[kind];get('reactionEmoji').textContent=info[0];get('reactionTitle').textContent=info[1];get('reactionBanner').dataset.kind=kind;get('reactionBanner').hidden=false;get('reactionBanner').style.animation='none';void get('reactionBanner').offsetWidth;get('reactionBanner').style.animation='';setupReaction(kind);reactionFrame=requestAnimationFrame(drawReaction);
+  const info={fireworks:['🎆','烟花盛典'],fire:['🔥','火力全开'],party:['🎉','派对时间']}[kind];get('reactionEmoji').textContent=info[0];get('reactionTitle').textContent=info[1];get('reactionBanner').dataset.kind=kind;get('reactionBanner').hidden=false;get('reactionBanner').style.animation='none';void get('reactionBanner').offsetWidth;get('reactionBanner').style.animation='';setupReaction(kind);reactionFrame=requestAnimationFrame(drawReaction);window.dispatchEvent(new CustomEvent('live:scene',{detail:{topic:kind}}));
  }
  document.querySelectorAll('[data-reaction]').forEach(button=>button.addEventListener('click',()=>triggerReaction(button.dataset.reaction)));get('stopReaction').addEventListener('click',stopReaction);
 
- let filter='',worker=null,workerState='idle',pending=false,captureStamp=0,sourceKey='',sourceGeneration=0,detected=null,pose=null,filterFrame=0,lastSourceTime=-1,lostAt=0;
+ let filter='',observing=false,worker=null,workerState='idle',pending=false,captureStamp=0,sourceKey='',sourceGeneration=0,detected=null,pose=null,filterFrame=0,lastSourceTime=-1,lostAt=0;
  const mask=get('faceMask'), filterGroups={bunny:get('filterBunny'),pig:get('filterPig'),uncle:get('filterUncle')};
  function status(text,state='idle'){if(get('filterStatus').textContent!==text)get('filterStatus').textContent=text;get('filterStatus').dataset.state=state;stage.dataset.faceState=state;}
  function source(){if(!get('media').hidden&&get('media').readyState>=2)return get('media');if(!get('backgroundImage').hidden&&get('backgroundImage').complete&&get('backgroundImage').naturalWidth)return get('backgroundImage');return null;}
@@ -57,7 +57,7 @@
    worker=new Worker(new URL('face-tracker.js',document.baseURI));
    worker.onmessage=({data})=>{
     if(data.type==='ready'){workerState='ready';captureStamp=0;}
-    else if(data.type==='result'){pending=false;if(data.generation===sourceGeneration){detected=data.face?{...data.face,width:data.width,height:data.height}:null;if(detected)lostAt=0;else if(!lostAt)lostAt=performance.now();}}
+    else if(data.type==='result'){pending=false;if(data.generation===sourceGeneration){detected=data.face?{...data.face,width:data.width,height:data.height}:null;if(detected)lostAt=0;else if(!lostAt)lostAt=performance.now();const cover=Math.max(width/data.width,height/data.height),ox=(width-data.width*cover)/2,oy=(height-data.height*cover)/2;const visible=(data.boxes||[]).filter(box=>{const x=(box.originX+box.width/2)*cover+ox,y=(box.originY+box.height/2)*cover+oy;return x>=0&&x<=width&&y>=0&&y<=height;});const box=visible[0];let x=box?((box.originX+box.width/2)*cover+ox)/width:0;if(get('mirror').checked)x=1-x;window.dispatchEvent(new CustomEvent('live:face',{detail:{present:!!box,count:visible.length,x,size:box?box.width*cover/width:0}}));}}
     else if(data.type==='error'||data.type==='frame-error'){failTracking(data.message);}
    };
    worker.onerror=event=>{event.preventDefault();failTracking(event.message);};
@@ -67,7 +67,7 @@
  function failTracking(message){console.warn('Face tracking unavailable:',message);workerState='failed';pending=false;worker?.terminate();worker=null;detected=null;get('faceTrack').checked=false;status('자동 추적을 사용할 수 없습니다. 아래에서 위치를 직접 조절하세요.','error');}
  async function capture(sourceElement,now){
   pending=true;captureStamp=now;const generation=sourceGeneration;
-  try{const sw=sourceElement.videoWidth||sourceElement.naturalWidth,sh=sourceElement.videoHeight||sourceElement.naturalHeight;const ratio=Math.min(1,512/Math.max(sw,sh));const bitmap=await createImageBitmap(sourceElement,{resizeWidth:Math.max(1,Math.round(sw*ratio)),resizeHeight:Math.max(1,Math.round(sh*ratio))});if(!filter||generation!==sourceGeneration||workerState!=='ready'){bitmap.close();pending=false;return;}worker.postMessage({type:'frame',bitmap,generation},[bitmap]);}catch{pending=false;}
+  try{const sw=sourceElement.videoWidth||sourceElement.naturalWidth,sh=sourceElement.videoHeight||sourceElement.naturalHeight;const ratio=Math.min(1,512/Math.max(sw,sh));const bitmap=await createImageBitmap(sourceElement,{resizeWidth:Math.max(1,Math.round(sw*ratio)),resizeHeight:Math.max(1,Math.round(sh*ratio))});if((!filter&&!observing)||generation!==sourceGeneration||workerState!=='ready'){bitmap.close();pending=false;return;}worker.postMessage({type:'frame',bitmap,generation},[bitmap]);}catch{pending=false;}
  }
  function targetPose(face){
   const cover=Math.max(width/face.width,height/face.height),offsetX=(width-face.width*cover)/2,offsetY=(height-face.height*cover)/2;
@@ -77,15 +77,14 @@
  }
  function positionMask(target,smooth){if(!pose||!smooth)pose=target;else{for(const key of ['x','y','scale','angle'])pose[key]+=(target[key]-pose[key])*.45;}mask.style.transform=`translate(${pose.x-160}px,${pose.y-170}px) rotate(${pose.angle}deg) scale(${pose.scale})`;}
  function renderFilter(now){
-  if(!filter){filterFrame=0;return;}
+  if(!filter&&!observing){filterFrame=0;return;}
   const element=source(),key=element?(element.id+':'+(element.currentSrc||element.src)+':'+mediaGeneration):'preview';
-  if(key!==sourceKey){sourceKey=key;sourceGeneration++;detected=null;pose=null;lastSourceTime=-1;captureStamp=0;lostAt=0;}
+  if(key!==sourceKey){sourceKey=key;sourceGeneration++;detected=null;pose=null;lastSourceTime=-1;captureStamp=0;lostAt=0;window.dispatchEvent(new CustomEvent('live:face',{detail:{present:false,count:0,reason:'source_changed'}}));}
+  if(element&&((filter&&get('faceTrack').checked)||observing)&&!document.hidden){if(workerState==='idle')startWorker();const newFrame=element.tagName==='IMG'?lastSourceTime<0:element.currentTime!==lastSourceTime;if(workerState==='ready'&&!pending&&now-captureStamp>=(filter?100:650)&&newFrame){lastSourceTime=element.tagName==='IMG'?0:element.currentTime;capture(element,now);}}
+  if(!filter){mask.hidden=true;filterFrame=requestAnimationFrame(renderFilter);return;}
   get('sampleFace').toggleAttribute('hidden',!!element);
   if(!element||!get('faceTrack').checked){mask.hidden=false;positionMask({x:width*(+get('faceX').value/100),y:height*(+get('faceY').value/100),scale:width/430*(+get('faceSize').value/100),angle:0},false);if(!element)status('미리보기 · 카메라나 얼굴이 있는 영상을 추가해보세요.','preview');else if(workerState!=='failed')status('수동 위치 · 아래 슬라이더로 맞춰주세요.','manual');}
   else{
-   if(workerState==='idle')startWorker();
-   const newFrame=element.tagName==='IMG'?lastSourceTime<0:element.currentTime!==lastSourceTime;
-   if(workerState==='ready'&&!pending&&now-captureStamp>=100&&newFrame){lastSourceTime=element.tagName==='IMG'?0:element.currentTime;capture(element,now);}
    if(detected){mask.hidden=false;positionMask(targetPose(detected),element.tagName!=='IMG');status('얼굴 추적 중 · 얼굴을 움직여보세요!','tracked');}
    else if(workerState==='ready'){if(!lostAt||now-lostAt>250)mask.hidden=true;status('얼굴 찾는 중 · 정면을 바라봐주세요.','searching');}
    else if(workerState==='loading'){mask.hidden=true;status('얼굴 추적 준비 중…','loading');}
@@ -94,7 +93,7 @@
  }
  function selectFilter(kind){
   filter=filter===kind?'':kind;stage.dataset.faceFilter=filter;Object.entries(filterGroups).forEach(([key,group])=>group.toggleAttribute('hidden',key!==filter));document.querySelectorAll('[data-face-filter]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.faceFilter===filter)));stage.classList.toggle('has-face-filter',!!filter);cancelAnimationFrame(filterFrame);pose=null;
-  if(filter)filterFrame=requestAnimationFrame(renderFilter);else{mask.hidden=true;status('카메라·영상·사진에 필터를 씌워보세요.');}
+  if(filter||observing)filterFrame=requestAnimationFrame(renderFilter);if(!filter){mask.hidden=true;status('카메라·영상·사진에 필터를 씌워보세요.');}if(filter)window.dispatchEvent(new CustomEvent('live:scene',{detail:{topic:filter}}));
  }
  document.querySelectorAll('[data-face-filter]').forEach(button=>button.addEventListener('click',()=>selectFilter(button.dataset.faceFilter)));get('filterOff').addEventListener('click',()=>{if(filter)selectFilter(filter);});
  get('faceTrack').addEventListener('change',()=>{detected=null;pose=null;captureStamp=0;lastSourceTime=-1;if(get('faceTrack').checked&&workerState==='failed'){workerState='idle';}});
@@ -107,5 +106,5 @@
   if(reactions[event.key]){event.preventDefault();triggerReaction(reactions[event.key]);}else if(filters[event.key]){event.preventDefault();selectFilter(filters[event.key]);}else if(event.key==='0'){event.preventDefault();stopReaction();if(filter)selectFilter(filter);}
  });
  window.addEventListener('pagehide',()=>{worker?.terminate();cancelAnimationFrame(filterFrame);stopReaction();});
- window.liveEffects={reaction:triggerReaction,filter:selectFilter,stop:stopReaction};
+ window.liveEffects={reaction:triggerReaction,filter:selectFilter,stop:stopReaction,watchFaces(enabled){observing=enabled;if(enabled){lastSourceTime=-1;captureStamp=0;}cancelAnimationFrame(filterFrame);if(filter||observing)filterFrame=requestAnimationFrame(renderFilter);}};
 })();
