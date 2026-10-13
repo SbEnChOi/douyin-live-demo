@@ -6,6 +6,7 @@
  const enabled=()=>get('smartComments').checked;
  const repliesEnabled=()=>enabled()&&(get('replyToMe')?.checked??true);
  const control=get('audienceStatus'),typing=get('audienceTyping');
+ function seedComments(){const feed=get('chatFeed');if(!feed?.children)return;if(window.resetChatFeed)window.resetChatFeed();else feed.replaceChildren();for(let i=0;i<4;i++)display(core.automatic(context()));}
  function context(){const sameSource=face?.generation===mediaGeneration,stillFrame=mediaKind==='image'||(get('media').paused&&face?.videoTime===get('media').currentTime);return {filter:get('stage').dataset.faceFilter||'',reaction:get('stage').dataset.reaction||'',media:mediaKind,viewers:Number(get('viewers').value)||1,koreanRatio:Number(get('koreanMix').value)/100,face:sameSource&&(Date.now()-face.at<4000||stillFrame)?face:null,chinaTime:new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date()),sendMemes:get('sendMemes')?.checked??true,mediaRatio:Number(get('memeFrequency')?.value||35)/100,swearLevel:Number(get('swearLevel')?.value||1)};}
  function setStatus(message){control.textContent=message;}
  function event(topic){if(!enabled())return;events.push({topic,at:Date.now()});if(events.length>8)events.shift();}
@@ -14,7 +15,7 @@
  function stopTyping(){typing.hidden=true;get('stage').classList.remove('awaiting-viewers');}
  function cancelReplies(){generation++;clearTimeout(replyTimer);replyQueue=[];for(const timer of reactionTimers)clearTimeout(timer);reactionTimers.clear();stopTyping();}
  function planAutomatic(){clearTimeout(automaticTimer);if(!enabled()||!get('autoChat').checked)return;
-  const interval=Number(get('audienceInterval').value)*1000;
+  const interval=Math.max(.8,Number(get('audienceInterval').value)||2)*1000;
   automaticTimer=setTimeout(()=>{if(!enabled())return;if(!document.hidden&&!replyQueue.length){const scene=pickEvent(),next=core.automatic(context(),scene);next.scene=!!scene;if(custom.length&&Math.random()<.25){next.text=pick(custom);next.custom=true;}display(next);}planAutomatic();},interval*(.82+Math.random()*.36));
  }
  function drainReplies(){
@@ -43,16 +44,16 @@
  });
  get('smartComments').addEventListener('change',configure);
  get('replyToMe')?.addEventListener('change',()=>{cancelReplies();setStatus(repliesEnabled()?'내 댓글 반응 켜짐 · 질문 없이 써도 답해요.':'내 댓글 반응 꺼짐');planAutomatic();});
- const intervalSteps=[15,10,6,4,2];
+ const intervalSteps=[8,4,2,1.2,.8];
  function syncInterval(){const seconds=Number(get('audienceInterval').value);get('audienceIntervalValue').textContent=seconds+'초';if(enabled()){get('chatSpeed').value=String(intervalSteps.reduce((best,n,i)=>Math.abs(n-seconds)<Math.abs(intervalSteps[best]-seconds)?i:best,0)+1);get('speedValue').textContent=seconds+'초 간격';}}
  get('audienceInterval').addEventListener('input',()=>{syncInterval();planAutomatic();});
  get('chatSpeed').addEventListener('input',e=>{if(enabled()){get('audienceInterval').value=String(intervalSteps[Number(e.target.value)-1]);syncInterval();planAutomatic();}});
- get('koreanMix').addEventListener('input',e=>{get('koreanMixValue').textContent=e.target.value+'%';});
+ get('koreanMix').addEventListener('input',e=>{const ratio=Number(e.target.value);get('koreanMixValue').textContent='한국어 '+ratio+'% · 중국어 '+(100-ratio)+'%';});
  get('autoChat').addEventListener('change',()=>{if(enabled()){setStatus(get('autoChat').checked?'시청자 반응 진행 중':repliesEnabled()?'자동 댓글 일시정지 · 내 댓글에는 답해요.':'자동 댓글과 내 댓글 반응 일시정지');planAutomatic();}});
- get('restartPreview').addEventListener('click',()=>{core.reset();memes?.reset();face=null;previousFace=null;lastFaceEvent=0;configure();});
+ get('restartPreview').addEventListener('click',()=>{core.reset();memes?.reset();face=null;previousFace=null;lastFaceEvent=0;configure();if(enabled())seedComments();});
  get('memeFrequency')?.addEventListener('input',e=>{get('memeFrequencyValue').textContent=e.target.value+'%';});
  get('previewMeme')?.addEventListener('click',()=>{if(!get('sendMemes').checked){toast('GIF·이미지 댓글 사용을 먼저 켜주세요.');return;}const preview=memes.decorate({name:'星星不睡觉',text:'SON 😭 哥们这个直播间，我先发张表情包再说',topic:'joke'},context(),{message:'SON 짤 보내줘',isReply:true,forceMedia:true});addComment(preview.text,preview.name,false,preview.attachment);});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&enabled()&&!replyQueue.length)planAutomatic();});
  window.addEventListener('pagehide',()=>{cancelReplies();clearTimeout(automaticTimer);});
- window.liveAudience={enabled,ask};configure();syncInterval();
+ window.liveAudience={enabled,ask};configure();syncInterval();if(enabled())seedComments();
 })();

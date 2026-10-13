@@ -14,8 +14,8 @@ test('remembers the introduced name, answers follow-ups, and clears memory on re
 });
 test('a why-question follows the recommended filter rather than making a new unrelated reply',()=>{
  const bot=create({random:()=>.5});const reply=bot.reply('어떤 필터가 좋아?',{...plain,filter:'uncle'});
- assert.equal(reply.topic,'bunny');assert.match(reply.comments[0].text,/兔子/);
- const why=bot.reply('왜?',plain);assert.equal(why.topic,'bunny');assert.match(why.comments[0].text,/眼睛|门牙/);
+ assert.equal(reply.topic,'bunny');assert.match(reply.comments[0].text,/토끼/);
+ const why=bot.reply('왜?',plain);assert.equal(why.topic,'bunny');assert.match(why.comments[0].text,/눈|앞니|표정/);
  assert.equal(bot.reply('더',plain).topic,'bunny');
  assert.notEqual(reply.comments[0].name,reply.comments[1].name);
 });
@@ -26,15 +26,15 @@ test('Chinese-only automatic comments do not repeat adjacent lines; Korean mix h
 });
 test('comments follow actual scene events and do not invent a face or clothing color',()=>{
  const bot=create({random:()=>.5});assert.equal(bot.automatic(plain,{topic:'fireworks'}).topic,'fireworks');
- assert.match(bot.reply('저 지금 보여?',plain).comments[0].text,/背景/);
- assert.match(bot.reply('저 지금 보여?',{...plain,media:'camera',face:{present:true,count:2}}).comments[0].text,/2个人/);
- assert.match(bot.reply('옷 무슨 색이야?',plain).comments[0].text,/不乱猜/);
+ assert.match(bot.reply('저 지금 보여?',plain).comments[0].text,/기본 배경/);
+ assert.match(bot.reply('저 지금 보여?',{...plain,media:'camera',face:{present:true,count:2}}).comments[0].text,/2명/);
+ assert.match(bot.reply('옷 무슨 색이야?',plain).comments[0].text,/못 알아봐/);
  assert.match(bot.reply('시청자 몇 명이야?',plain).comments[0].text,/12,800/);
 });
 test('unknown questions get a contextual joke and ordinary tired messages stay in joke mode',()=>{
  const bot=create({random:()=>.5});assert.match(bot.reply('양자역학 수업 시작할까?',plain).comments[0].text,/양자역학/);
  assert.equal(bot.reply('오늘 너무 피곤해',plain).topic,'tired');
- assert.match(bot.reply('농담해줘',plain).comments[0].text,/钱包|人生|朋友|腹肌|明天/);
+ assert.match(bot.reply('농담해줘',plain).comments[0].text,/운동|몸|장바구니|피곤|알람|뇌|할 일|집중|내일/);
 });
 
 function browserLogic(withMemes=false){
@@ -52,8 +52,8 @@ test('question replies are delayed, preserve FIFO order, and work with automatic
  const app=browserLogic();app.get('autoChat').checked=false;app.change('autoChat');
  app.context.liveAudience.ask('내 이름은 승빈');app.context.liveAudience.ask('내 이름 기억나?');
  app.advance(2199);assert.equal(app.comments.length,0);
- app.advance(1);assert.equal(app.comments.length,1);assert.match(app.comments[0].text,/记住啦.*승빈/);
- app.advance(2200);assert.equal(app.comments.length,2);assert.match(app.comments[1].text,/当然记得.*승빈/);
+ app.advance(1);assert.equal(app.comments.length,1);assert.match(app.comments[0].text,/승빈/);
+ app.advance(2200);assert.equal(app.comments.length,2);assert.match(app.comments[1].text,/승빈/);
  app.advance(15000);assert.equal(app.comments.length,2);
 });
 test('turning off the feature cancels pending replies and typing; a reset clears names',()=>{
@@ -61,8 +61,8 @@ test('turning off the feature cancels pending replies and typing; a reset clears
  app.get('smartComments').checked=true;app.change('smartComments');app.context.liveAudience.ask('내 이름은 승빈');app.advance(2200);app.get('restartPreview').listeners.click[0]();app.context.liveAudience.ask('내 이름 기억나?');app.advance(2200);assert.doesNotMatch(app.comments.at(-1).text,/승빈/);
 });
 test('a static photo remains observed after several seconds, and a source change invalidates it',()=>{
- const app=browserLogic();app.context.mediaKind='image';app.emit('live:face',{present:true,count:2,x:.5,size:.3});app.advance(10000);app.context.liveAudience.ask('저 지금 보여?');app.advance(2200);assert.match(app.comments.at(-1).text,/2个人/);
- app.context.mediaGeneration++;app.emit('live:face',{present:false,count:0,reason:'source_changed'});app.context.liveAudience.ask('저 지금 보여?');app.advance(2200);assert.match(app.comments.at(-1).text,/没找到/);
+ const app=browserLogic();app.context.mediaKind='image';app.emit('live:face',{present:true,count:2,x:.5,size:.3});app.advance(10000);app.context.liveAudience.ask('저 지금 보여?');app.advance(2200);assert.match(app.comments.at(-1).text,/2명/);
+ app.context.mediaGeneration++;app.emit('live:face',{present:false,count:0,reason:'source_changed'});app.context.liveAudience.ask('저 지금 보여?');app.advance(2200);assert.match(app.comments.at(-1).text,/못 찾/);
 });
 
 test('meme requests retain delayed replies and obey settings changed while the reply is pending',()=>{
@@ -87,8 +87,8 @@ test('quick emoji reactions and delayed replies stay tied to the correct origina
  app.context.liveAudience.ask('ㅋㅋㅋㅋ',first);app.context.liveAudience.ask('노잼',second);
  app.advance(699);assert.equal(app.reactions.length,0);assert.equal(app.comments.length,0);
  app.advance(1);assert.equal(app.reactions[0].row,first);assert.equal(app.reactions[0].emoji,'😂');assert.equal(app.reactions[1].row,second);assert.equal(app.reactions[1].emoji,'😭');
- app.advance(1500);assert.equal(app.comments[0].replyTo.text,'ㅋㅋㅋㅋ');assert.match(app.comments[0].text,/哈哈|腹肌|绷/);
- app.advance(2200);assert.equal(app.comments[1].replyTo.text,'노잼');assert.match(app.comments[1].text,/无聊|不好笑|差评/);
+ app.advance(1500);assert.equal(app.comments[0].replyTo.text,'ㅋㅋㅋㅋ');assert.match(app.comments[0].text,/[가-힣]/);
+ app.advance(2200);assert.equal(app.comments[1].replyTo.text,'노잼');assert.match(app.comments[1].text,/노잼|뇌|드립|웃음/);
 });
 
 test('disabling replies cancels emojis and queued answers while automatic comments continue',()=>{
@@ -96,4 +96,43 @@ test('disabling replies cancels emojis and queued answers while automatic commen
  app.advance(10000);assert.equal(app.reactions.length,0);assert.ok(app.comments.length>0);assert.ok(app.comments.every(c=>!c.replyTo));assert.equal(app.get('audienceTyping').hidden,true);
  app.get('autoChat').checked=false;app.change('autoChat');app.get('replyToMe').checked=true;app.change('replyToMe');
  app.context.liveAudience.ask('인정ㅋㅋ',{id:2});app.get('restartPreview').listeners.click[0]();const before=app.comments.length;app.advance(4000);assert.equal(app.reactions.length,0);assert.equal(app.comments.length,before);
+});
+
+test('automatic comments keep a 3:1 language split even with memes and Korean conversation',()=>{
+ const bot=create({random:()=>0}),memes=require('../dist/meme-pack.js').create({random:()=>0});
+ let ko=0,zh=0;
+ for(let i=0;i<120;i++){
+  if(i%9===0)for(const reply of bot.reply('안녕',{...plain,koreanRatio:.75}).comments)assert.equal(reply.language,'ko');
+  const original=bot.automatic({...plain,koreanRatio:.75});
+  const styled=memes.decorate(original,{koreanRatio:.75,sendMemes:false,swearLevel:0});
+  if(styled.language==='ko'){ko++;assert.match(styled.text,/[가-힣]/);}else{zh++;assert.doesNotMatch(styled.text,/[가-힣ㄱ-ㅎ]/);}
+ }
+ assert.equal(ko,90);assert.equal(zh,30);
+});
+
+test('automatic Korean comments avoid the recent hundred lines even with one filter left on',()=>{
+ const bot=create({random:()=>0}),recent=[];
+ for(let i=0;i<180;i++){
+  const line=bot.automatic({...plain,koreanRatio:1,filter:'bunny'}).text;
+  assert.ok(!recent.includes(line),'Recent duplicate: '+line);recent.push(line);if(recent.length>100)recent.shift();
+ }
+});
+
+test('greetings, follow-ups, and facts answer in the language the user used',()=>{
+ const bot=create({random:()=>0});
+ for(const message of ['안녕','ㅋㅋㅋ','내 이름은 승빈','내 이름 기억나?','어떤 필터가 좋아?','왜?','내 댓글 읽어줘','한국어로 얘기하자']){
+  const answer=bot.reply(message,{...plain,koreanRatio:0});
+  for(const c of answer.comments){assert.equal(c.language,'ko');assert.match(c.text,/[가-힣ㄱ-ㅎ]/);}
+ }
+ assert.match(bot.reply('내 이름 기억나?',plain).comments[0].text,/승빈/);
+ assert.match(bot.reply('시청자 몇 명이야?',plain).comments[0].text,/12,800/);
+ for(const c of bot.reply('你好',{...plain,koreanRatio:1}).comments){assert.equal(c.language,'zh');assert.doesNotMatch(c.text,/[가-힣]/);}
+});
+
+test('two-second automatic mode produces a comment at the configured jittered interval',()=>{
+ const app=browserLogic();app.get('audienceInterval').value='2';app.get('audienceInterval').listeners.input[0]();
+ app.advance(1639);assert.equal(app.comments.length,0);app.advance(1);assert.equal(app.comments.length,1);
+ const html=fs.readFileSync(path.join(__dirname,'../dist/index.html'),'utf8');
+ assert.match(html,/id="audienceInterval"[^>]*min="0\.8"[^>]*value="2"/);
+ assert.match(html,/id="koreanMix"[^>]*max="100"[^>]*value="75"/);
 });

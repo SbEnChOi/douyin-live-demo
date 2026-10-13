@@ -71,7 +71,7 @@ test('every attachment points to a bundled image and arbitrary URLs cannot enter
  }
 });
 
-test('media rendering retains safe text, opens the correct source, and drops old media after seven comments',()=>{
+test('media rendering keeps history, preserves reading position, and returns to new comments on request',()=>{
  class Element{
   constructor(tag){this.tagName=tag;this.children=[];this.listeners={};this.classes=new Set();this.textContent='';this.hidden=true;this.scrollHeight=100;this.classList={add:c=>this.classes.add(c),remove:c=>this.classes.delete(c),toggle:(c,on)=>on?this.classes.add(c):this.classes.delete(c)};}
   append(...children){for(const child of children){child.parent=this;this.children.push(child);}}
@@ -93,7 +93,10 @@ test('media rendering retains safe text, opens the correct source, and drops old
  assert.equal(button.children[1].textContent,'GIF');assert.ok(get('chatArea').classes.has('has-chat-media'));
  button.listeners.click();assert.equal(get('sheet').hidden,false);assert.equal(get('sheetContent').children[2].href,pack.get('clap').source);
  img.listeners.error();assert.ok(button.classes.has('media-failed'));
- for(let i=0;i<7;i++)context.addComment('纯文字','阿晨',false,'https://evil.example/image.gif');
- assert.equal(get('chatFeed').children.length,7);assert.ok(!get('chatArea').classes.has('has-chat-media'));
+ const area=get('chatArea');area.scrollHeight=1000;area.clientHeight=300;area.scrollTop=150;area.listeners.scroll();
+ context.addComment('新评论','阿晨');img.listeners.load();assert.equal(area.scrollTop,150);assert.equal(get('chatLatest').hidden,false);assert.match(get('chatLatest').textContent,/1/);
+ get('chatLatest').listeners.click();assert.equal(area.scrollTop,1000);assert.equal(get('chatLatest').hidden,true);
+ for(let i=0;i<500;i++)context.addComment('纯文字','阿晨',false,'https://evil.example/image.gif');
+ assert.equal(get('chatFeed').children.length,500);assert.ok(!get('chatArea').classes.has('has-chat-media'));
  assert.equal(get('chatFeed').children.at(-1).children.length,3);
 });

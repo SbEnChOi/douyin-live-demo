@@ -2,32 +2,40 @@
 const $ = id => document.getElementById(id);
 const names = ['小雨','林小可','爱笑的橙子','星星不睡觉','小丸子','阿晨','奶茶三分糖','晚风','可可','是小鹿呀','幸运锦鲤','甜心小熊','用户8392','月亮邮递员','一颗草莓'];
 const samples = ['主播好漂亮！😍','大家晚上好～','来了来了 👋','这个直播间氛围好好','太棒了 ❤️','已经关注啦！','姐姐好有气质 ✨','每天都来看看你','喜欢这个感觉 💕','新来的朋友点点关注～','哈哈哈好可爱','支持支持！！','晚上好呀主播 🌙','忍不住点赞了 ❤️','从推荐进来的，爱了','终于等到开播啦','大家一起点点赞 👏','主播看一下我～','今天也要开心呀 🌸','声音好好听！'];
-const speeds=[4500,3000,1800,1000,550];
+const speeds=[8000,4000,2000,1200,800];
 let running=true,chatTimer,heartTimer,arrivalTimer,custom=[],likes=86000,viewers=12800,mediaUrl=null,cameraStream=null,mediaKind='none',mediaGeneration=0,giftTimer,toastTimer,stageToastTimer,controlsTimer;
 const pick = a => a[Math.floor(Math.random()*a.length)];
+let chatPinned=true,unreadComments=0;
+const maxCommentHistory=500;
+function updateChatScroll(newComment=false){const area=$('chatArea'),latest=$('chatLatest');area.classList.toggle('is-reading',!chatPinned);if(chatPinned){area.scrollTop=area.scrollHeight;unreadComments=0;}else if(newComment)unreadComments++;if(latest){latest.hidden=chatPinned;latest.textContent=unreadComments?'新评论 '+unreadComments+' ↓':'回到最新 ↓';}}
+function jumpToLatest(){chatPinned=true;updateChatScroll();}
+function resetChatFeed(){chatPinned=true;unreadComments=0;$('chatFeed').replaceChildren();updateChatScroll();}
+$('chatArea').addEventListener('scroll',()=>{const area=$('chatArea');chatPinned=area.scrollHeight-(area.clientHeight||0)-area.scrollTop<=24;updateChatScroll();},{passive:true});
+$('chatLatest')?.addEventListener('click',jumpToLatest);
 function numberLabel(n){return n>=10000?(n/10000).toFixed(1)+'万':n.toLocaleString('zh-CN');}
 function updateCounts(){ $('likesDisplay').textContent=numberLabel(likes);$('viewerDisplay').textContent=numberLabel(viewers); }
 function toast(message){$('globalToast').textContent=message;$('globalToast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('globalToast').classList.remove('visible'),3000);}
 function stageToast(message){$('stageToast').textContent=message;$('stageToast').classList.add('visible');clearTimeout(stageToastTimer);stageToastTimer=setTimeout(()=>$('stageToast').classList.remove('visible'),2200);}
 function addComment(text=pick(custom.length?custom:samples),name=pick(names),self=false,attachment=null,replyTo=null){
+ if(self)jumpToLatest();
  const row=document.createElement('div');row.className='chat-row'+(self?' self':'');
  const level=document.createElement('span');level.className='level';level.textContent='♬ '+(3+Math.floor(Math.random()*29));
  const username=document.createElement('span');username.className='name';username.textContent=name+'：';
  const content=document.createElement('span');content.textContent=text;row.append(level,username,content);
  if(replyTo?.text){row.classList.add('is-reply');const reference=document.createElement('small');reference.className='reply-reference';reference.textContent='回复 '+(replyTo.name||'我')+' · '+String(replyTo.text).slice(0,42);row.append(reference);}
- const meme=window.LiveMemePack?.get(attachment);if(meme){row.classList.add('has-attachment');const button=document.createElement('button');button.className='chat-media';button.type='button';button.setAttribute('aria-label','查看表情：'+meme.title);const img=document.createElement('img');img.src=meme.src;img.alt=meme.title;img.decoding='async';img.width=meme.width;img.height=meme.height;const badge=document.createElement('span');badge.className='media-badge';badge.textContent=meme.kind==='gif'?'GIF':'IMG';const caption=document.createElement('span');caption.className='media-caption';caption.textContent=meme.title;button.append(img,badge,caption);button.addEventListener('click',()=>showMemePreview(meme.id));img.addEventListener('load',()=>$('chatArea').scrollTop=$('chatArea').scrollHeight);img.addEventListener('error',()=>{button.classList.add('media-failed');caption.textContent=meme.title+' · 图片暂时不可用';});row.append(button);}
+ const meme=window.LiveMemePack?.get(attachment);if(meme){row.classList.add('has-attachment');const button=document.createElement('button');button.className='chat-media';button.type='button';button.setAttribute('aria-label','查看表情：'+meme.title);const img=document.createElement('img');img.src=meme.src;img.alt=meme.title;img.decoding='async';img.width=meme.width;img.height=meme.height;const badge=document.createElement('span');badge.className='media-badge';badge.textContent=meme.kind==='gif'?'GIF':'IMG';const caption=document.createElement('span');caption.className='media-caption';caption.textContent=meme.title;button.append(img,badge,caption);button.addEventListener('click',()=>showMemePreview(meme.id));img.addEventListener('load',()=>updateChatScroll());img.addEventListener('error',()=>{button.classList.add('media-failed');caption.textContent=meme.title+' · 图片暂时不可用';updateChatScroll();});row.append(button);}
  $('chatFeed').append(row);
- while($('chatFeed').children.length>7)$('chatFeed').firstElementChild.remove();
- $('chatArea').classList.toggle('has-chat-media',!!$('chatFeed').querySelector('.has-attachment'));$('chatArea').scrollTop=$('chatArea').scrollHeight;
+ while($('chatFeed').children.length>maxCommentHistory){const feed=$('chatFeed'),before=feed.scrollHeight;feed.firstElementChild.remove();if(!chatPinned)$('chatArea').scrollTop=Math.max(0,$('chatArea').scrollTop-(before-feed.scrollHeight));}
+ $('chatArea').classList.toggle('has-chat-media',!!$('chatFeed').querySelector('.has-attachment'));updateChatScroll(true);
  return row;
 }
-function reactComment(row,emoji,name){if(!row?.isConnected)return;let reactions=row.querySelector('.comment-reactions');if(!reactions){reactions=document.createElement('span');reactions.className='comment-reactions';row.append(reactions);}reactions.textContent=emoji+' 1';reactions.title=name+' 对这条评论作出回应';reactions.setAttribute('aria-label',name+' 的反应：'+emoji);$('chatArea').scrollTop=$('chatArea').scrollHeight;}
+function reactComment(row,emoji,name){if(!row?.isConnected)return;let reactions=row.querySelector('.comment-reactions');if(!reactions){reactions=document.createElement('span');reactions.className='comment-reactions';row.append(reactions);}reactions.textContent=emoji+' 1';reactions.title=name+' 对这条评论作出回应';reactions.setAttribute('aria-label',name+' 的反应：'+emoji);updateChatScroll();}
 function showMemePreview(id){const meme=window.LiveMemePack?.get(id);if(!meme)return;$('sheetTitle').textContent=meme.title;$('sheetContent').replaceChildren();const img=document.createElement('img');img.className='meme-detail-image';img.src=meme.src;img.alt=meme.title;const credit=document.createElement('p');credit.className='meme-credit';credit.textContent=meme.credit;const source=document.createElement('a');source.className='meme-source';source.href=meme.source;source.target='_blank';source.rel='noopener noreferrer';source.textContent='查看原出处 ↗';$('sheetContent').append(img,credit,source);$('sheet').classList.add('meme-sheet');$('sheet').hidden=false;}
 function scheduleChat(){clearTimeout(chatTimer);if(!running||window.liveAudience?.enabled())return;chatTimer=setTimeout(()=>{addComment();scheduleChat();},speeds[+$('chatSpeed').value-1]*(.85+Math.random()*.3));}
 function heart(){const h=document.createElement('span');h.className='floating-heart';h.textContent='♥';h.style.color=pick(['#ff436d','#ff86ad','#ffb7cc','#ff6589','#d898ff']);h.style.left=Math.random()*45+'%';h.style.setProperty('--drift',(Math.random()*15-7)+'cqw');h.style.setProperty('--tilt',(Math.random()*45-22)+'deg');$('heartField').append(h);h.addEventListener('animationend',()=>h.remove());}
 function burst(){for(let i=0;i<9;i++)setTimeout(heart,i*100);likes+=9;$('likes').value=likes;updateCounts();}
 function rose(){clearTimeout(giftTimer);$('giftOverlay').hidden=false;giftTimer=setTimeout(()=>$('giftOverlay').hidden=true,3600);}
-function init(){ $('chatFeed').replaceChildren();addComment('欢迎来到直播间！喜欢就点点关注吧 ❤️','直播助手');for(let i=0;i<5;i++)addComment();updateCounts();scheduleChat(); }
+function init(){resetChatFeed();addComment('欢迎来到直播间！喜欢就点点关注吧 ❤️','直播助手');for(let i=0;i<5;i++)addComment();updateCounts();scheduleChat();}
 function releaseMedia(){mediaGeneration++;if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}$('media').pause();$('media').srcObject=null;$('media').removeAttribute('src');$('media').load();$('media').hidden=true;$('backgroundImage').hidden=true;$('backgroundImage').removeAttribute('src');if(mediaUrl){URL.revokeObjectURL(mediaUrl);mediaUrl=null;}mediaKind='none';$('backdrop').hidden=false;$('emptyState').hidden=false;$('playMedia').disabled=true;$('playMedia').textContent='영상 일시정지';$('cameraButton').innerHTML='<svg><use href="#i-camera"/></svg>카메라 켜기';$('sourceStatus').textContent='기본 배경';$('mediaHint').textContent='추가한 파일은 이 브라우저에서만 사용됩니다.';$('mediaFile').value='';}
 async function useFile(file){if(!file)return;if(!file.type.startsWith('video/')&&!file.type.startsWith('image/')){toast('영상 또는 이미지 파일을 선택해주세요.');return;}releaseMedia();const generation=mediaGeneration;mediaUrl=URL.createObjectURL(file);$('sourceStatus').textContent=file.name;$('emptyState').hidden=true;
  if(file.type.startsWith('image/')){mediaKind='image';$('backgroundImage').src=mediaUrl;$('backgroundImage').hidden=false;$('backdrop').hidden=true;}

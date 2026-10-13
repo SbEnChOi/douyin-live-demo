@@ -33,6 +33,6 @@ test('submitting the actual chat form adds a reaction and a quoted reply to that
  let prevented=false;get('liveChatInput').value='ㅋㅋㅋㅋ';get('liveChatForm').listeners.submit[0]({preventDefault(){prevented=true;}});
  const original=get('chatFeed').children.at(-1);assert.equal(original.children[2].textContent,'ㅋㅋㅋㅋ');assert.equal(get('liveChatInput').value,'');assert.equal(prevented,true);
  advance(700);assert.equal(original.querySelector('.comment-reactions').textContent,'😂 1');
- advance(1500);const reply=get('chatFeed').children.at(-1);assert.notEqual(reply,original);assert.equal(reply.querySelector('.reply-reference').textContent,'回复 我 · ㅋㅋㅋㅋ');assert.ok(reply.querySelector('.chat-media'));
+ advance(1500);const reply=get('chatFeed').children.at(-1);assert.notEqual(reply,original);assert.equal(reply.querySelector('.reply-reference').textContent,'回复 我 · ㅋㅋㅋㅋ');assert.match(reply.children[2].textContent,/[가-힣]/);
  const before=original.children.length;original.remove();context.reactComment(original,'❤️','阿晨');assert.equal(original.children.length,before);
 });

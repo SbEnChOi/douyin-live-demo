@@ -14,7 +14,7 @@
   rage:{zh:['这破课一提，脑子已经开始摇桌子了😂','Cartman 代表我发言，今天的耐心已售罄','上课的我 vs 看直播的我，属于两个物种😂','不是哥们，作业还没写，桌子先想离家出走'],ko:['형ㅋㅋ 학교 얘기하니까 책상부터 흔들고 싶네','ㄹㅇ 수업 시작하면 내 뇌가 자동 로그아웃함ㅋㅋ']},
   tiptoe:{zh:['哥们这个走位，Rumpelstiltskin 都得让你当领舞😂','这不是跳舞，这是脑回路偷偷溜出直播间','脚开始整活，脑子表示自己毫不知情😂','这动作属于深夜刷到就睡不着的程度'],ko:['형ㅋㅋ 이 무빙 Tiptoe 선배도 자리 양보하겠다','아니 형ㅋㅋ 발은 춤추는데 뇌는 퇴근했네']}
  };
- const tags={son:'SON 😭',crine:"I’m crine 😭",clap:'👏 黑猫都开始鼓掌了',rage:'😂 Cartman 已经开始摇桌子了',tiptoe:'😂 Tiptoe 本人来了'};
+ const tags={zh:{son:'SON 😭',crine:"I’m crine 😭",clap:'👏 黑猫都开始鼓掌了',rage:'😂 Cartman 已经开始摇桌子了',tiptoe:'😂 Tiptoe 本人来了'},ko:{son:'SON 😭',crine:"I’m crine 😭",clap:'👏 고양이도 인정함ㅋㅋ',rage:'😂 카트맨도 책상 흔드는 중',tiptoe:'😂 Tiptoe 선배 입장ㅋㅋ'}};
  function get(id){return Object.hasOwn(catalog,id)?catalog[id]:null;}
  function detect(message){const q=String(message||'').toLowerCase();if(/crine|크라인|크린/.test(q))return 'crine';if(/\bson\b|손\s*밈|son\s*😭/.test(q))return 'son';if(/black\s*cat|고양이.*박수|박수.*고양이|黑猫|猫.*鼓掌/.test(q))return 'clap';if(/tiptoe|rumpel|럼펠|티프토|팁토/.test(q))return 'tiptoe';if(/cartman|카트맨|卡特曼/.test(q))return 'rage';return null;}
  function create(options={}){
@@ -36,8 +36,9 @@
    let key=keyFor(comment.topic,meta.message,context,direct);
    if(key==='rage'&&Number(context.swearLevel??1)===0)key='crine';
    let text=comment.text;
+   const locale=comment.language||(random()<(context.koreanRatio??.75)?'ko':'zh');
    const useMeme=!protectedTopic&&(direct||explicit||random()<.38);
-   if(useMeme){if(meta.isReply&&!direct&&!explicit)text+=' '+tags[key];else{const language=random()<(context.koreanRatio??.12)?'ko':'zh';text=choose(lines[key][language]);}}
+   if(useMeme){if(direct||explicit)text=choose(lines[key][locale]);else text+=' '+tags[locale][key];}
    const level=Number(context.swearLevel??1),isKorean=/[가-힣ㄱ-ㅎ]/.test(text);
    if(!protectedTopic&&level>0&&random()<(level===2?.34:.16)){
     const exclamations=isKorean?(level===2?['씨발ㅋㅋ','ㅅㅂㅋㅋ','아니 시발ㅋㅋ']:['아 ㅅㅂㅋㅋ','미친ㅋㅋ','와 씨ㅋㅋ']):(level===2?['卧槽，','靠，','damn，','what the fuck，']:['卧槽，','靠，','damn，']);
