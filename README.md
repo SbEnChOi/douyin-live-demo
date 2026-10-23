@@ -176,7 +176,7 @@ douyin-live-demo/
 │  ├─ audience-core.js   # 대화 규칙과 한국어·중국어 문구
 │  ├─ audience.js        # 자동 댓글, 답글 대기열, 화면 반응
 │  ├─ meme-pack.js       # 댓글 주제별 이미지·GIF 선택
-│  ├─ effects.js         # 폭죽·불꽃·파티와 얼굴 필터
+│  ├─ effects.js         # 폭죽·파티와 얼굴 필터
 │  ├─ face-tracker.js    # 얼굴 추적 Worker
 │  ├─ effects-core.js    # 실시간 모드 공용 효과 코어
 │  ├─ join.css           # 관객 입장 페이지 스타일
