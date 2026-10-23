@@ -41,7 +41,7 @@
  }
  function stopReaction(){cancelAnimationFrame(reactionFrame);reactionFrame=0;particles=[];queue=[];ctx.clearRect(0,0,width,height);get('reactionBanner').hidden=true;delete stage.dataset.reaction;}
  function triggerReaction(kind){
-  if(!['fireworks','fire','party'].includes(kind))return;stopReaction();resize();reactionKind=kind;reactionStart=performance.now();lastReactionFrame=reactionStart;stage.dataset.reaction=kind;
+  if(!['fireworks','party'].includes(kind))return;stopReaction();resize();reactionKind=kind;reactionStart=performance.now();lastReactionFrame=reactionStart;stage.dataset.reaction=kind;
   const info={fireworks:['🎆','烟花盛典'],fire:['🔥','火力全开'],party:['🎉','派对时间']}[kind];get('reactionEmoji').textContent=info[0];get('reactionTitle').textContent=info[1];get('reactionBanner').dataset.kind=kind;get('reactionBanner').hidden=false;get('reactionBanner').style.animation='none';void get('reactionBanner').offsetWidth;get('reactionBanner').style.animation='';setupReaction(kind);reactionFrame=requestAnimationFrame(drawReaction);window.dispatchEvent(new CustomEvent('live:scene',{detail:{topic:kind}}));
  }
  document.querySelectorAll('[data-reaction]').forEach(button=>button.addEventListener('click',()=>triggerReaction(button.dataset.reaction)));get('stopReaction').addEventListener('click',stopReaction);
@@ -52,7 +52,7 @@
  function source(){if(!get('media').hidden&&get('media').readyState>=2)return get('media');if(!get('backgroundImage').hidden&&get('backgroundImage').complete&&get('backgroundImage').naturalWidth)return get('backgroundImage');return null;}
  function startWorker(){
   if(workerState==='loading'||workerState==='ready')return;
-  workerState='loading';status('얼굴 추적 준비 중…');
+  workerState='loading';status('正在准备人脸追踪…');
   try{
    worker=new Worker(new URL('face-tracker.js',document.baseURI));
    worker.onmessage=({data})=>{
@@ -64,7 +64,7 @@
    worker.postMessage({type:'init'});
   }catch(error){failTracking(error.message);}
  }
- function failTracking(message){console.warn('Face tracking unavailable:',message);workerState='failed';pending=false;worker?.terminate();worker=null;detected=null;get('faceTrack').checked=false;status('자동 추적을 사용할 수 없습니다. 아래에서 위치를 직접 조절하세요.','error');}
+ function failTracking(message){console.warn('Face tracking unavailable:',message);workerState='failed';pending=false;worker?.terminate();worker=null;detected=null;get('faceTrack').checked=false;status('无法使用自动追踪，请在下方手动调整位置。','error');}
  async function capture(sourceElement,now){
   pending=true;captureStamp=now;const generation=sourceGeneration;
   try{const sw=sourceElement.videoWidth||sourceElement.naturalWidth,sh=sourceElement.videoHeight||sourceElement.naturalHeight;const ratio=Math.min(1,512/Math.max(sw,sh));const bitmap=await createImageBitmap(sourceElement,{resizeWidth:Math.max(1,Math.round(sw*ratio)),resizeHeight:Math.max(1,Math.round(sh*ratio))});if((!filter&&!observing)||generation!==sourceGeneration||workerState!=='ready'){bitmap.close();pending=false;return;}worker.postMessage({type:'frame',bitmap,generation},[bitmap]);}catch{pending=false;}
@@ -83,17 +83,17 @@
   if(element&&((filter&&get('faceTrack').checked)||observing)&&!document.hidden){if(workerState==='idle')startWorker();const newFrame=element.tagName==='IMG'?lastSourceTime<0:element.currentTime!==lastSourceTime;if(workerState==='ready'&&!pending&&now-captureStamp>=(filter?100:650)&&newFrame){lastSourceTime=element.tagName==='IMG'?0:element.currentTime;capture(element,now);}}
   if(!filter){mask.hidden=true;filterFrame=requestAnimationFrame(renderFilter);return;}
   get('sampleFace').toggleAttribute('hidden',!!element);
-  if(!element||!get('faceTrack').checked){mask.hidden=false;positionMask({x:width*(+get('faceX').value/100),y:height*(+get('faceY').value/100),scale:width/430*(+get('faceSize').value/100),angle:0},false);if(!element)status('미리보기 · 카메라나 얼굴이 있는 영상을 추가해보세요.','preview');else if(workerState!=='failed')status('수동 위치 · 아래 슬라이더로 맞춰주세요.','manual');}
+  if(!element||!get('faceTrack').checked){mask.hidden=false;positionMask({x:width*(+get('faceX').value/100),y:height*(+get('faceY').value/100),scale:width/430*(+get('faceSize').value/100),angle:0},false);if(!element)status('预览 · 请添加摄像头或含人脸的视频。','preview');else if(workerState!=='failed')status('手动位置 · 用下方滑块调整。','manual');}
   else{
-   if(detected){mask.hidden=false;positionMask(targetPose(detected),element.tagName!=='IMG');status('얼굴 추적 중 · 얼굴을 움직여보세요!','tracked');}
-   else if(workerState==='ready'){if(!lostAt||now-lostAt>250)mask.hidden=true;status('얼굴 찾는 중 · 정면을 바라봐주세요.','searching');}
-   else if(workerState==='loading'){mask.hidden=true;status('얼굴 추적 준비 중…','loading');}
+   if(detected){mask.hidden=false;positionMask(targetPose(detected),element.tagName!=='IMG');status('人脸追踪中 · 试着移动脸部！','tracked');}
+   else if(workerState==='ready'){if(!lostAt||now-lostAt>250)mask.hidden=true;status('正在寻找人脸 · 请面向镜头。','searching');}
+   else if(workerState==='loading'){mask.hidden=true;status('正在准备人脸追踪…','loading');}
   }
   filterFrame=requestAnimationFrame(renderFilter);
  }
  function selectFilter(kind){
   filter=filter===kind?'':kind;stage.dataset.faceFilter=filter;Object.entries(filterGroups).forEach(([key,group])=>group.toggleAttribute('hidden',key!==filter));document.querySelectorAll('[data-face-filter]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.faceFilter===filter)));stage.classList.toggle('has-face-filter',!!filter);cancelAnimationFrame(filterFrame);pose=null;
-  if(filter||observing)filterFrame=requestAnimationFrame(renderFilter);if(!filter){mask.hidden=true;status('카메라·영상·사진에 필터를 씌워보세요.');}if(filter)window.dispatchEvent(new CustomEvent('live:scene',{detail:{topic:filter}}));
+  if(filter||observing)filterFrame=requestAnimationFrame(renderFilter);if(!filter){mask.hidden=true;status('给摄像头、视频或照片加上滤镜。');}if(filter)window.dispatchEvent(new CustomEvent('live:scene',{detail:{topic:filter}}));
  }
  document.querySelectorAll('[data-face-filter]').forEach(button=>button.addEventListener('click',()=>selectFilter(button.dataset.faceFilter)));get('filterOff').addEventListener('click',()=>{if(filter)selectFilter(filter);});
  get('faceTrack').addEventListener('change',()=>{detected=null;pose=null;captureStamp=0;lastSourceTime=-1;if(get('faceTrack').checked&&workerState==='failed'){workerState='idle';}});
@@ -102,7 +102,7 @@
  get('restartPreview').addEventListener('click',()=>{stopReaction();if(filter)selectFilter(filter);});
  document.addEventListener('keydown',event=>{
   if(event.repeat||event.ctrlKey||event.metaKey||event.altKey||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)||document.activeElement.isContentEditable)return;
-  const reactions={'1':'fireworks','2':'fire','3':'party'},filters={'4':'bunny','5':'pig','6':'uncle'};
+  const reactions={'1':'fireworks','3':'party'},filters={'4':'bunny','5':'pig','6':'uncle'};
   if(reactions[event.key]){event.preventDefault();triggerReaction(reactions[event.key]);}else if(filters[event.key]){event.preventDefault();selectFilter(filters[event.key]);}else if(event.key==='0'){event.preventDefault();stopReaction();if(filter)selectFilter(filter);}
  });
  window.addEventListener('pagehide',()=>{worker?.terminate();cancelAnimationFrame(filterFrame);stopReaction();});

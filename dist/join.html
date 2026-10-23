@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101114">
+<title>直播间 · 抖音风格直播</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="join.css">
+</head>
+<body class="join-page">
+<div class="join-shell">
+  <header class="join-top">
+    <a class="brand" href="./" aria-label="Live Studio">
+      <span class="brand-mark">♪</span>
+      <span>LIVE<span class="brand-light">STUDIO</span></span>
+    </a>
+    <span class="join-room-chip"><i></i><span id="roomCode">----</span></span>
+  </header>
+
+  <main class="join-main">
+    <section class="join-card join-loading" id="loadingView">
+      <span class="join-spinner" aria-hidden="true"></span>
+      <p>正在连接直播间…</p>
+    </section>
+
+    <section class="join-card" id="entryView" hidden>
+      <div class="join-hero">
+        <span class="live-pill"><i></i> LIVE</span>
+        <h1>一起看直播</h1>
+        <p>取个昵称，马上进入直播间。<br>用评论和礼物为演讲加油。</p>
+      </div>
+      <label class="join-label" for="nameInput">昵称</label>
+      <input class="join-input" id="nameInput" maxlength="12" autocomplete="nickname" placeholder="例如：小雨">
+      <button class="join-primary" id="joinButton" type="button">进入直播间 <span>→</span></button>
+      <p class="join-hint">先到先得 <b id="entryCapacity">10</b> 人 · 满员自动排队<br>本场使用虚拟直播币，无真实支付。</p>
+    </section>
+
+    <section class="join-card join-wait" id="waitView" hidden>
+      <span class="wait-mark">⏳</span>
+      <h1>直播间已满</h1>
+      <p>当前 <b id="waitCapacity">10</b> 人在线。<br>有空位会自动入场。</p>
+      <div class="wait-position">排队序号 <b id="waitPosition">1</b></div>
+      <div class="wait-bar"><span id="waitBar"></span></div>
+      <p class="join-hint">不要关闭此页面，每 2 秒自动检查空位。</p>
+      <button class="join-secondary" id="waitRetry" type="button">立即检查</button>
+    </section>
+
+    <section class="join-room" id="roomView" hidden>
+      <header class="room-top">
+        <div class="room-live"><i></i><span>直播中</span></div>
+        <div class="room-title">小夏的直播间</div>
+        <div class="room-stats"><span id="onlineCount">1</span>/<span id="seatCapacity">10</span> · ♥ <span id="likeCount">0</span></div>
+      </header>
+      <div class="room-balance">
+        <span>我的直播币</span>
+        <b id="coinBalance">1000</b>
+        <span class="room-disclaimer">虚拟币 · 无真实支付</span>
+      </div>
+
+      <div class="room-feed" id="feed" role="log" aria-live="polite"></div>
+      <div class="heart-layer" id="heartLayer" aria-hidden="true"></div>
+
+      <div class="gift-panel">
+        <div class="gift-heading"><span>送礼物</span><small>特效会实时出现在电视上</small></div>
+        <div class="gift-grid" id="giftGrid"></div>
+      </div>
+
+      <div class="room-composer">
+        <button class="room-like" id="likeButton" type="button" aria-label="点赞"><span>♥</span><small id="likeButtonCount">0</small></button>
+        <form class="room-input" id="commentForm">
+          <button class="gif-trigger" id="gifButton" type="button" aria-label="表情包">GIF</button>
+          <input id="commentInput" maxlength="60" placeholder="说点什么…" autocomplete="off" enterkeyhint="send">
+          <button id="sendButton" type="submit" aria-label="发送评论">↗</button>
+        </form>
+      </div>
+      <p class="room-status" id="connectionStatus"><i></i> 已连接</p>
+    </section>
+
+    <section class="join-card" id="endedView" hidden>
+      <span class="wait-mark">🌙</span>
+      <h1>直播已结束</h1>
+      <p>请扫描新的二维码，或点击下方重新入场。</p>
+      <button class="join-primary" id="restartButton" type="button">重新入场</button>
+    </section>
+  </main>
+
+  <footer class="join-foot">
+    <span>DOUYIN-STYLE LIVE</span>
+    <span>虚拟演示 · 无真实支付</span>
+  </footer>
+</div>
+
+<div class="meme-backdrop" id="memeBackdrop" hidden></div>
+<section class="meme-sheet" id="memeSheet" hidden aria-label="表情包">
+  <div class="meme-sheet-head"><b>限定表情包</b><button id="memeClose" type="button" aria-label="关闭">×</button></div>
+  <p>已提前下载的外国梗图 · 点击直接发送</p>
+  <div class="meme-grid" id="memeGrid"></div>
+</section>
+
+<div class="join-toast" id="toast" role="status"></div>
+<script src="join.js"></script>
+</body>
+</html>

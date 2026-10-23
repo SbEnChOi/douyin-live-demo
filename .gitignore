@@ -1,1 +1,3 @@
 site-deploy*.tar.gz
+.live-config.json
+*.log

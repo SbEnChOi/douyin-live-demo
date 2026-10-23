@@ -66,7 +66,8 @@ test('every attachment points to a bundled image and arbitrary URLs cannot enter
  assert.equal(pack.get('__proto__'),null);assert.equal(pack.get('https://evil.example/image.gif'),null);
  for(const item of Object.values(pack.catalog)){
   const bytes=fs.readFileSync(path.join(__dirname,'../dist',item.src));
-  assert.ok(bytes.length>1000);assert.match(item.source,/^https:\/\//);
+  assert.ok(bytes.length>1000);
+  if(item.source)assert.match(item.source,/^https:\/\//);else assert.match(item.credit,/user-provided/);
   assert.ok(bytes.subarray(0,3).equals(Buffer.from([255,216,255]))||/^GIF8[79]a/.test(bytes.subarray(0,6).toString()));
  }
 });

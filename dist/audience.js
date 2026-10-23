@@ -22,12 +22,12 @@
   clearTimeout(replyTimer);if(!repliesEnabled()||!replyQueue.length){stopTyping();planAutomatic();return;}
   clearTimeout(automaticTimer);const comment=replyQueue[0];typing.textContent=comment.name+' 正在输入…';typing.hidden=false;get('stage').classList.add('awaiting-viewers');const current=generation;
   const delay=comment.followup?1100+Math.random()*900:2200+Math.random()*1600;
-  replyTimer=setTimeout(()=>{if(current!==generation||!repliesEnabled())return;replyQueue.shift();display(comment);stopTyping();if(replyQueue.length)drainReplies();else{setStatus(get('autoChat').checked?'드립 치는 중 · 내 댓글에도 답글을 달아요.':'자동 댓글 일시정지 · 내 댓글에는 계속 답해요.');planAutomatic();}},delay);
+  replyTimer=setTimeout(()=>{if(current!==generation||!repliesEnabled())return;replyQueue.shift();display(comment);stopTyping();if(replyQueue.length)drainReplies();else{setStatus(get('autoChat').checked?'整活中 · 也会回复我的评论。':'自动评论已暂停 · 仍会回复我的评论。');planAutomatic();}},delay);
  }
- function ask(message,row=null){message=String(message||'').trim().slice(0,180);if(!message||!repliesEnabled())return;if(replyQueue.length>=9){toast('댓글창 드립이 밀렸어요ㅋㅋ 잠깐만 기다려주세요.');return;}const answer=core.reply(message,context());if(row){const current=generation,timer=setTimeout(()=>{reactionTimers.delete(timer);if(current===generation&&repliesEnabled())window.reactComment?.(row,answer.reaction||'😂',answer.comments[0].name);},700+Math.random()*800);reactionTimers.add(timer);}const alreadyPending=replyQueue.length>0;const comments=answer.comments.slice(0,2).map((c,index)=>({...c,topic:answer.topic,followup:index>0,question:message}));replyQueue.push(...comments);setStatus('내 댓글을 읽는 중 · 곧 답글이 올라와요.');if(!alreadyPending)drainReplies();}
+ function ask(message,row=null){message=String(message||'').trim().slice(0,180);if(!message||!repliesEnabled())return;if(replyQueue.length>=9){toast('评论太多啦，请稍等一下。');return;}const answer=core.reply(message,context());if(row){const current=generation,timer=setTimeout(()=>{reactionTimers.delete(timer);if(current===generation&&repliesEnabled())window.reactComment?.(row,answer.reaction||'😂',answer.comments[0].name);},700+Math.random()*800);reactionTimers.add(timer);}const alreadyPending=replyQueue.length>0;const comments=answer.comments.slice(0,2).map((c,index)=>({...c,topic:answer.topic,followup:index>0,question:message}));replyQueue.push(...comments);setStatus('正在读我的评论 · 很快回复。');if(!alreadyPending)drainReplies();}
  function configure(){cancelReplies();clearTimeout(automaticTimer);events=[];window.liveEffects?.watchFaces(enabled());
-  if(enabled()){clearTimeout(chatTimer);setStatus('농담 모드 · 질문을 기억하고 드립으로 받아쳐요.');planAutomatic();syncInterval();$('simulationState').textContent=get('autoChat').checked?'시청자 드립 진행 중':'자동 댓글 일시정지';}
-  else{setStatus('시청자 반응 꺼짐 · 기존 샘플 댓글을 사용해요.');get('speedValue').textContent=['아주 느리게','여유롭게','자연스럽게','활기차게','아주 빠르게'][Number(get('chatSpeed').value)-1];scheduleChat();$('simulationState').textContent=get('autoChat').checked?'자동 댓글 진행 중':'자동 댓글 일시정지';}
+  if(enabled()){clearTimeout(chatTimer);setStatus('整活模式 · 记住问题并用玩笑回应。');planAutomatic();syncInterval();$('simulationState').textContent=get('autoChat').checked?'观众整活进行中':'自动评论已暂停';}
+  else{setStatus('观众互动已关闭 · 使用示例评论。');get('speedValue').textContent=['非常慢','悠闲','自然','活跃','非常快'][Number(get('chatSpeed').value)-1];scheduleChat();$('simulationState').textContent=get('autoChat').checked?'自动评论进行中':'自动评论已暂停';}
  }
  window.addEventListener('live:scene',e=>event(e.detail.topic));
  window.addEventListener('live:face',e=>{
@@ -43,16 +43,16 @@
   if(!previousFace||!current.present)previousFace=current;
  });
  get('smartComments').addEventListener('change',configure);
- get('replyToMe')?.addEventListener('change',()=>{cancelReplies();setStatus(repliesEnabled()?'내 댓글 반응 켜짐 · 질문 없이 써도 답해요.':'내 댓글 반응 꺼짐');planAutomatic();});
+ get('replyToMe')?.addEventListener('change',()=>{cancelReplies();setStatus(repliesEnabled()?'已开启回复我的评论 · 不提问也会回应。':'回复我的评论已关闭');planAutomatic();});
  const intervalSteps=[8,4,2,1.2,.8];
- function syncInterval(){const seconds=Number(get('audienceInterval').value);get('audienceIntervalValue').textContent=seconds+'초';if(enabled()){get('chatSpeed').value=String(intervalSteps.reduce((best,n,i)=>Math.abs(n-seconds)<Math.abs(intervalSteps[best]-seconds)?i:best,0)+1);get('speedValue').textContent=seconds+'초 간격';}}
+ function syncInterval(){const seconds=Number(get('audienceInterval').value);get('audienceIntervalValue').textContent=seconds+' 秒';if(enabled()){get('chatSpeed').value=String(intervalSteps.reduce((best,n,i)=>Math.abs(n-seconds)<Math.abs(intervalSteps[best]-seconds)?i:best,0)+1);get('speedValue').textContent=seconds+' 秒间隔';}}
  get('audienceInterval').addEventListener('input',()=>{syncInterval();planAutomatic();});
  get('chatSpeed').addEventListener('input',e=>{if(enabled()){get('audienceInterval').value=String(intervalSteps[Number(e.target.value)-1]);syncInterval();planAutomatic();}});
- get('koreanMix').addEventListener('input',e=>{const ratio=Number(e.target.value);get('koreanMixValue').textContent='한국어 '+ratio+'% · 중국어 '+(100-ratio)+'%';});
- get('autoChat').addEventListener('change',()=>{if(enabled()){setStatus(get('autoChat').checked?'시청자 반응 진행 중':repliesEnabled()?'자동 댓글 일시정지 · 내 댓글에는 답해요.':'자동 댓글과 내 댓글 반응 일시정지');planAutomatic();}});
+ get('koreanMix').addEventListener('input',e=>{const ratio=Number(e.target.value);get('koreanMixValue').textContent='韩语 '+ratio+'% · 中文 '+(100-ratio)+'%';});
+ get('autoChat').addEventListener('change',()=>{if(enabled()){setStatus(get('autoChat').checked?'观众互动进行中':repliesEnabled()?'自动评论已暂停 · 仍会回复我的评论。':'自动评论和我的评论回复已暂停');planAutomatic();}});
  get('restartPreview').addEventListener('click',()=>{core.reset();memes?.reset();face=null;previousFace=null;lastFaceEvent=0;configure();if(enabled())seedComments();});
  get('memeFrequency')?.addEventListener('input',e=>{get('memeFrequencyValue').textContent=e.target.value+'%';});
- get('previewMeme')?.addEventListener('click',()=>{if(!get('sendMemes').checked){toast('GIF·이미지 댓글 사용을 먼저 켜주세요.');return;}const preview=memes.decorate({name:'星星不睡觉',text:'SON 😭 哥们这个直播间，我先发张表情包再说',topic:'joke'},context(),{message:'SON 짤 보내줘',isReply:true,forceMedia:true});addComment(preview.text,preview.name,false,preview.attachment);});
+ get('previewMeme')?.addEventListener('click',()=>{if(!get('sendMemes').checked){toast('请先开启 GIF/图片评论。');return;}const preview=memes.decorate({name:'星星不睡觉',text:'SON 😭 哥们这个直播间，我先发张表情包再说',topic:'joke'},context(),{message:'SON 表情包',isReply:true,forceMedia:true});addComment(preview.text,preview.name,false,preview.attachment);});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&enabled()&&!replyQueue.length)planAutomatic();});
  window.addEventListener('pagehide',()=>{cancelReplies();clearTimeout(automaticTimer);});
  window.liveAudience={enabled,ask};configure();syncInterval();if(enabled())seedComments();

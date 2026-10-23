@@ -1,0 +1,11 @@
+{
+  "name": "douyin-live-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Douyin-style live stage with realtime audience comments and virtual gifts.",
+  "scripts": {
+    "start": "node server.cjs",
+    "preview": "node preview.mjs",
+    "test": "node --test tests/audience.test.cjs tests/comment-flow.test.cjs tests/memes.test.cjs tests/room.test.cjs tests/server.test.cjs"
+  }
+}

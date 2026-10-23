@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b0c0f">
+<title>LIVE STAGE — Douyin Live Studio</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="effects.css">
+<link rel="stylesheet" href="live.css">
+</head>
+<body class="stage-page">
+<div class="broadcast" id="stage" lang="zh-CN">
+  <div class="camera-fallback" id="cameraFallback">
+    <div class="studio-backdrop">
+      <div class="ambient ambient-one"></div>
+      <div class="ambient ambient-two"></div>
+      <div class="studio-grid"></div>
+      <div class="backdrop-word">LIVE</div>
+    </div>
+    <div class="fallback-copy">
+      <span class="fallback-mark">♪</span>
+      <b>等待连接摄像头</b>
+      <small>开启摄像头后，这里会显示主播画面。</small>
+    </div>
+  </div>
+
+  <video id="camera" autoplay muted playsinline></video>
+  <div class="stage-vignette"></div>
+  <canvas id="reactionCanvas" class="reaction-canvas" aria-hidden="true"></canvas>
+  <div id="reactionBanner" class="reaction-banner" hidden><span id="reactionEmoji"></span><strong id="reactionTitle"></strong><small>谢谢你的支持！</small></div>
+
+  <header class="live-header">
+    <div class="host">
+      <div class="host-avatar">夏</div>
+      <div class="host-copy">
+        <strong>小夏的直播间</strong>
+        <span><b id="likesDisplay">8.6万</b> 本场点赞</span>
+      </div>
+      <button class="follow" id="follow" type="button">关注</button>
+    </div>
+    <div class="viewer-avatars"><span>林</span><span>小</span><span>王</span></div>
+    <span class="viewer-pill"><b id="viewerDisplay">1.2万</b> 在线</span>
+  </header>
+
+  <div class="live-subheader">
+    <span class="fan-club">♬ 加入粉丝团</span>
+    <span class="rank">♨ 人气榜 · 第 8 名 ›</span>
+  </div>
+
+  <div class="live-sticker" id="liveSticker">
+    <span class="sticker-live"><i></i> 直播中</span>
+    <span>欢迎来到直播间</span>
+    <small>好物分享 · 快乐每一天</small>
+  </div>
+
+  <div class="arrival" id="arrival" hidden></div>
+
+  <aside class="live-rail" aria-label="实时评论">
+    <div class="rail-head"><span><i></i> 实时评论</span><small>LIVE CHAT</small></div>
+    <div class="chat-area" id="chatArea" tabindex="0">
+      <div class="chat-feed" id="chatFeed" role="log" aria-live="off"></div>
+    </div>
+    <div class="rail-rank">
+      <div class="rail-rank-title"><span>打赏榜</span><small>TOP SUPPORTERS</small></div>
+      <div id="rankList" class="rank-list"><p>还没有打赏，等你来支持 ❤️</p></div>
+    </div>
+  </aside>
+
+  <div class="gift-overlay" id="giftOverlay" hidden>
+    <div class="gift-person"><span id="giftPerson">小星星</span><small>送出 <b id="giftName">玫瑰</b></small></div>
+    <span class="rose" id="giftEmoji">🌹</span>
+    <b id="giftCount">× 1</b>
+  </div>
+
+  <div class="heart-field" id="heartField" aria-hidden="true"></div>
+
+  <div class="qr-card" id="qrCard">
+    <img id="qrImage" src="/api/qr.svg" alt="扫码进入直播间" width="132" height="132">
+    <div class="qr-copy">
+      <b>扫码进入直播间</b>
+      <span class="qr-code" id="qrCode">----</span>
+      <small><b id="qrSeats">0/10</b> · 先到先得</small>
+    </div>
+  </div>
+
+  <div class="live-bottom">
+    <button class="shopping-bag" id="shoppingBag" type="button" aria-label="购物袋"><span class="bag-icon">🛍</span><span>好物</span></button>
+    <form id="hostCommentForm" class="live-input">
+      <input id="hostCommentInput" maxlength="60" placeholder="说点什么..." autocomplete="off" aria-label="主播评论">
+      <button type="submit" aria-label="发送评论">↗</button>
+    </form>
+    <button class="bottom-icon" id="giftButton" type="button" aria-label="送礼物">🎁</button>
+    <button class="bottom-icon heart-button" id="likeButton" type="button" aria-label="点赞">♥</button>
+    <button class="bottom-icon" id="shareButton" type="button" aria-label="分享">↗</button>
+  </div>
+
+  <div class="stage-toast" id="stageToast" role="status"></div>
+
+  <div class="op-bar" id="opBar">
+    <button type="button" data-op="setup">摄像头设置</button>
+    <button type="button" data-op="qr">QR</button>
+    <button type="button" data-op="clear">清空评论</button>
+    <button type="button" data-op="fullscreen">全屏</button>
+    <span class="op-status" id="opStatus"><i></i> 连接中</span>
+  </div>
+
+  <section class="setup" id="setup">
+    <div class="setup-card">
+      <div class="setup-qr">
+        <div class="setup-qr-head"><span class="live-pill"><i></i> LIVE</span><span>SCAN TO JOIN</span></div>
+        <img id="setupQr" src="/api/qr.svg" alt="扫码进入直播间" width="270" height="270">
+        <div class="setup-code">ROOM <b id="setupCode">----</b></div>
+        <p>用手机相机扫描二维码</p>
+        <div class="setup-seats"><b id="setupSeats">0</b> / <span id="setupCapacity">10</span> 入场 <em id="setupWaiting"></em></div>
+      </div>
+      <div class="setup-copy">
+        <span class="setup-eyebrow">TV STAGE · 16:9 · REALTIME</span>
+        <h1>连接摄像头<br>开始直播</h1>
+        <p class="setup-desc">电视只显示这个画面。PPT 留在智慧黑板上，观众用手机发评论和礼物。</p>
+        <label class="setup-label" for="cameraSelect">摄像头</label>
+        <select id="cameraSelect" class="setup-select"><option value="">请先开启摄像头</option></select>
+        <div class="setup-actions">
+          <button type="button" class="setup-secondary" id="cameraButton">开启摄像头</button>
+          <label class="setup-check"><input id="mirrorToggle" type="checkbox"> 左右镜像</label>
+        </div>
+        <button type="button" class="setup-primary" id="startButton">开始直播 <span>→</span></button>
+        <p class="setup-status" id="cameraStatus">开启摄像头后，这里会显示主播画面。</p>
+        <p class="setup-hint">摄像头只在本机使用，不会上传到服务器。<br>快捷键：<kbd>Q</kbd> 二维码 · <kbd>H</kbd> 控制栏 · <kbd>F</kbd> 全屏</p>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="effects-core.js"></script>
+<script src="live.js"></script>
+</body>
+</html>
